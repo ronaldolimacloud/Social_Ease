@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import { globalGroups } from './groups';
@@ -49,6 +49,14 @@ export let globalProfiles: Profile[] = [
   },
 ];
 
+// Function to update a profile in the global profiles array
+export const updateProfile = (updatedProfile: Profile) => {
+  const profileIndex = globalProfiles.findIndex(p => p.id === updatedProfile.id);
+  if (profileIndex !== -1) {
+    globalProfiles = [...globalProfiles.slice(0, profileIndex), updatedProfile, ...globalProfiles.slice(profileIndex + 1)];
+  }
+};
+
 // Utility function to add a new profile to the global profiles array
 // Takes a profile without an ID and generates one based on the array length
 export const addProfile = (profile: Omit<Profile, 'id'>) => {
@@ -79,6 +87,13 @@ export default function ProfilesScreen() {
   useEffect(() => {
     setGroupNames(getUniqueGroups());
   }, [globalGroups]);
+
+  // Effect to update profiles when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      setProfiles([...globalProfiles]);
+    }, [])
+  );
 
   // Filter profiles based on selected group and search query
   const filteredProfiles = profiles.filter(profile => {

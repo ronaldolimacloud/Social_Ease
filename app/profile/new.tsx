@@ -31,6 +31,7 @@ const DEFAULT_PHOTO = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377
 export default function NewProfileScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [description, setDescription] = useState('');
   const [bio, setBio] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
@@ -96,7 +97,7 @@ export default function NewProfileScreen() {
     const newProfile = addProfile({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      description: '', // Empty description since we removed the field
+      description: description.trim(),
       bio: bio.trim(),
       photoUrl: photoUri || DEFAULT_PHOTO,
       groups: selectedGroups.map(({ id, type, name }) => ({ id, type, name })),
@@ -148,6 +149,16 @@ export default function NewProfileScreen() {
             value={lastName}
             onChangeText={setLastName}
             placeholder="Enter last name"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Title/Role</Text>
+          <TextInput
+            style={styles.input}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="e.g. Software Engineer, Student, Artist"
           />
         </View>
 
