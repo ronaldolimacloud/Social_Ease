@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 
@@ -8,23 +8,21 @@ type Group = {
   name: string;
   type: string;
   description?: string;
-  memberCount: number;
 };
 
 // Use a global variable to store groups across component re-renders
 export let globalGroups: Group[] = [
-  { id: '1', type: 'work', name: 'Engineering Team', memberCount: 12 },
-  { id: '2', type: 'school', name: 'Computer Science', memberCount: 45 },
-  { id: '3', type: 'social', name: 'Book Club', memberCount: 8 },
-  { id: '4', type: 'work', name: 'Design Team', memberCount: 15 },
-  { id: '5', type: 'school', name: 'Math Club', memberCount: 20 },
+  { id: '1', type: 'work', name: 'Engineering Team' },
+  { id: '2', type: 'school', name: 'Computer Science' },
+  { id: '3', type: 'social', name: 'Book Club' },
+  { id: '4', type: 'work', name: 'Design Team' },
+  { id: '5', type: 'school', name: 'Math Club' },
 ];
 
-export const addGroup = (group: Omit<Group, 'id' | 'memberCount'>) => {
+export const addGroup = (group: Omit<Group, 'id'>) => {
   const newGroup = {
     ...group,
     id: String(globalGroups.length + 1),
-    memberCount: 0,
   };
   globalGroups = [...globalGroups, newGroup];
   return newGroup;
@@ -32,6 +30,29 @@ export const addGroup = (group: Omit<Group, 'id' | 'memberCount'>) => {
 
 export default function GroupsScreen() {
   const [groups, setGroups] = useState<Group[]>(globalGroups);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleDeleteGroup = (groupId: string) => {
+    Alert.alert(
+      "Delete Group",
+      "Are you sure you want to delete this group?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            globalGroups = globalGroups.filter(g => g.id !== groupId);
+            setGroups(globalGroups);
+          }
+        }
+      ]
+    );
+  };
 
   const renderGroup = ({ item }: { item: Group }) => (
     <Pressable style={styles.groupCard}>
@@ -59,16 +80,28 @@ export default function GroupsScreen() {
       </View>
       <View style={styles.groupInfo}>
         <Text style={styles.groupName}>{item.name}</Text>
-        <Text style={styles.memberCount}>
-          {item.memberCount} {item.memberCount === 1 ? 'member' : 'members'}
-        </Text>
       </View>
+      <Pressable 
+        style={styles.deleteButton}
+        onPress={() => handleDeleteGroup(item.id)}
+      >
+        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+      </Pressable>
     </Pressable>
   );
 
   return (
     <View style={styles.container}>
-      <Header />
+      <Header 
+        showSearch={showSearch}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchPress={() => setShowSearch(true)}
+        onSearchClose={() => {
+          setShowSearch(false);
+          setSearchQuery('');
+        }}
+      />
       <FlatList
         data={groups}
         renderItem={renderGroup}
@@ -98,6 +131,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    alignItems: 'center',
   },
   groupIcon: {
     width: 48,
@@ -107,16 +141,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   groupInfo: {
+    flex: 1,
     marginLeft: 12,
     justifyContent: 'center',
   },
   groupName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
   },
-  memberCount: {
-    fontSize: 14,
-    color: '#666666',
+  deleteButton: {
+    padding: 8,
   },
 });

@@ -1,11 +1,14 @@
-import { View, Text, StyleSheet, Image, TextInput, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, ViewStyle, TextStyle, ImageStyle, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type HeaderProps = {
-  showSearch?: boolean;
-  searchValue?: string;
-  onSearchChange?: (text: string) => void;
+  showSearch: boolean;
+  searchValue: string;
+  onSearchChange: (text: string) => void;
+  onSearchPress?: () => void;
+  onSearchClose?: () => void;
+  isProfilesTab?: boolean;
 };
 
 type Styles = {
@@ -14,11 +17,18 @@ type Styles = {
   logo: ImageStyle;
   appName: TextStyle;
   searchContainer: ViewStyle;
-  searchIcon: TextStyle;
   searchInput: TextStyle;
+  headerContent: ViewStyle;
 };
 
-export default function Header({ showSearch, searchValue, onSearchChange }: HeaderProps) {
+export default function Header({ 
+  showSearch, 
+  searchValue, 
+  onSearchChange,
+  onSearchPress,
+  onSearchClose,
+  isProfilesTab = false
+}: HeaderProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -28,16 +38,27 @@ export default function Header({ showSearch, searchValue, onSearchChange }: Head
         />
         <Text style={styles.appName}>SocialEase</Text>
       </View>
-      {showSearch && (
+      {showSearch ? (
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color="#666666" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search profiles..."
             value={searchValue}
             onChangeText={onSearchChange}
-            placeholderTextColor="#666666"
+            placeholder="Search profiles..."
+            autoFocus
           />
+          <Pressable onPress={onSearchClose}>
+            <Ionicons name="close" size={20} color="#666666" />
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.headerContent}>
+          {isProfilesTab && (
+            <Pressable onPress={onSearchPress}>
+              <Ionicons name="search" size={24} color="#666666" />
+            </Pressable>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -70,18 +91,21 @@ const styles = StyleSheet.create<Styles>({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingBottom: 8,
-  },
-  searchIcon: {
-    marginRight: 8,
+    paddingBottom: 12,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
     height: 36,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: '#333333',
+    paddingHorizontal: 8,
+    fontSize: 15,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  }
 });

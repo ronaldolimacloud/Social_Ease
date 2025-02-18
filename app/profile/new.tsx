@@ -82,7 +82,7 @@ export default function NewProfileScreen() {
       insights,
     });
 
-    router.push('/(tabs)/');
+    router.push('/(tabs)');
   };
 
   const toggleGroup = (group: Group) => {
@@ -288,119 +288,115 @@ export default function NewProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#FFFFFF',
   },
   photoContainer: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    marginTop: 16,
+    marginBottom: 16,
   },
   photo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   photoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F0F0F0',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   photoPlaceholderText: {
-    marginTop: 8,
+    fontSize: 12,
     color: '#666666',
+    marginTop: 4,
   },
   form: {
     padding: 16,
+    gap: 16,
   },
   inputGroup: {
-    marginBottom: 16,
+    gap: 4,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: 8,
     color: '#333333',
   },
   required: {
     color: '#FF3B30',
-    marginLeft: 4,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    height: 40,
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    paddingHorizontal: 12,
+    fontSize: 15,
   },
   inputError: {
+    borderWidth: 1,
     borderColor: '#FF3B30',
   },
   textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+    height: 80,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   insightInput: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 8,
   },
   insightTextInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    height: 40,
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    minHeight: 44,
+    paddingHorizontal: 12,
+    fontSize: 15,
   },
   addInsightButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
     backgroundColor: '#007AFF',
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addInsightButtonDisabled: {
-    backgroundColor: '#E5E5E5',
+    backgroundColor: '#B4B4B4',
   },
   insightsList: {
+    marginTop: 8,
     gap: 8,
   },
   insightItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F0F8FF',
     borderRadius: 8,
-    padding: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   insightText: {
     flex: 1,
     fontSize: 14,
-    color: '#333333',
+    marginRight: 8,
   },
   removeInsight: {
-    marginLeft: 8,
+    padding: 2,
   },
   groupSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     padding: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   groupSelectorText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666666',
   },
   selectedGroups: {
@@ -412,7 +408,7 @@ const styles = StyleSheet.create({
   selectedGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F0F8FF',
     borderRadius: 16,
     paddingVertical: 4,
     paddingHorizontal: 12,
@@ -424,6 +420,24 @@ const styles = StyleSheet.create({
   },
   removeGroup: {
     marginLeft: 4,
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#B4B4B4',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButtonTextDisabled: {
+    color: '#FFFFFF',
   },
   modalContainer: {
     flex: 1,
@@ -466,9 +480,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F8FF',
   },
   groupIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -496,23 +510,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#E5E5E5',
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonTextDisabled: {
-    color: '#999999',
   },
 });
