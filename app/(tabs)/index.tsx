@@ -138,15 +138,21 @@ export default function ProfilesScreen() {
                   }
                   style={styles.groupTagIcon}
                 />
-                <Text style={[
-                  styles.groupTagText,
-                  { color: 
-                    // Dynamic text color based on group type
-                    group.type === 'work' ? '#1976D2' : 
-                    group.type === 'school' ? '#388E3C' : 
-                    group.type === 'social' ? '#F57C00' : '#757575' 
-                  }
-                ]}>{group.name}</Text>
+                <Text 
+                  style={[
+                    styles.groupTagText,
+                    { color: 
+                      // Dynamic text color based on group type
+                      group.type === 'work' ? '#1976D2' : 
+                      group.type === 'school' ? '#388E3C' : 
+                      group.type === 'social' ? '#F57C00' : '#757575' 
+                    }
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {group.name}
+                </Text>
               </View>
             ))}
           </View>
@@ -269,17 +275,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 12,
   },
   // Profile image styling
   profileImage: {
     width: 60,
     height: 60,
-    borderRadius: 30, // Makes the image circular
+    borderRadius: 30,
   },
   // Container for profile text information
   profileInfo: {
     flex: 1,
     marginLeft: 12,
+    marginRight: 4,
   },
   // Profile name text style
   name: {
@@ -304,28 +312,27 @@ const styles = StyleSheet.create({
   // Container for group tags
   groupTags: {
     flexDirection: 'row',
-    // flexWrap: 'wrap' allows child elements to wrap onto multiple lines
-    // when there isn't enough space in a single line.
-    // Without wrap, elements would try to squeeze into one line
-    // or potentially overflow outside their container
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 6,
+    flexWrap: 'nowrap',
   },
   // Individual group tag styling
   groupTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 12,
-  },
-  // Group tag icon styling
-  groupTagIcon: {
-    marginRight: 4,
+    maxWidth: '45%',
   },
   // Group tag text styling
   groupTagText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
+    flex: 1,
+  },
+  // Group tag icon styling
+  groupTagIcon: {
+    marginRight: 3,
   },
 });

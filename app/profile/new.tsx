@@ -67,7 +67,7 @@ export default function NewProfileScreen() {
     setInsights(insights.filter(insight => insight.id !== id));
   };
 
-  const isFormValid = firstName.trim() && lastName.trim();
+  const isFormValid = firstName.trim();
 
   const handleSave = () => {
     if (!isFormValid) return;
@@ -121,9 +121,9 @@ export default function NewProfileScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Last Name<Text style={styles.required}>*</Text></Text>
+          <Text style={styles.label}>Last Name</Text>
           <TextInput
-            style={[styles.input, !lastName.trim() && styles.inputError]}
+            style={styles.input}
             value={lastName}
             onChangeText={setLastName}
             placeholder="Enter last name"
