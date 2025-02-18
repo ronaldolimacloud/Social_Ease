@@ -18,7 +18,8 @@ type Styles = {
   appName: TextStyle;
   searchContainer: ViewStyle;
   searchInput: TextStyle;
-  headerContent: ViewStyle;
+  logoContainer: ViewStyle;
+  searchButton: ViewStyle;
 };
 
 export default function Header({ 
@@ -31,13 +32,6 @@ export default function Header({
 }: HeaderProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1516575334481-f85287c2c82d?w=200&h=200&fit=crop' }} 
-          style={styles.logo} 
-        />
-        <Text style={styles.appName}>SocialEase</Text>
-      </View>
       {showSearch ? (
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666666" />
@@ -53,9 +47,16 @@ export default function Header({
           </Pressable>
         </View>
       ) : (
-        <View style={styles.headerContent}>
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1516575334481-f85287c2c82d?w=200&h=200&fit=crop' }} 
+              style={styles.logo} 
+            />
+            <Text style={styles.appName}>SocialEase</Text>
+          </View>
           {isProfilesTab && (
-            <Pressable onPress={onSearchPress}>
+            <Pressable onPress={onSearchPress} style={styles.searchButton}>
               <Ionicons name="search" size={24} color="#666666" />
             </Pressable>
           )}
@@ -70,11 +71,17 @@ const styles = StyleSheet.create<Styles>({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+    paddingVertical: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logo: {
     width: 32,
@@ -91,7 +98,6 @@ const styles = StyleSheet.create<Styles>({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingBottom: 12,
     gap: 8,
   },
   searchInput: {
@@ -102,10 +108,7 @@ const styles = StyleSheet.create<Styles>({
     paddingHorizontal: 8,
     fontSize: 15,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-  }
+  searchButton: {
+    padding: 4,
+  },
 });

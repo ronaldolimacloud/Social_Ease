@@ -1,108 +1,112 @@
 import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '../../components/Header';
-
-const features = [
-  {
-    id: '1',
-    title: 'Remember Details',
-    description: 'Keep track of names, interests, and past conversations',
-    icon: 'people',
-    color: '#1976D2',
-    bgColor: '#E3F2FD',
-    link: '/(tabs)/index',
-  },
-  {
-    id: '2',
-    title: 'Track Progress',
-    description: 'Monitor your social interactions and growth',
-    icon: 'analytics',
-    color: '#388E3C',
-    bgColor: '#E8F5E9',
-    link: '/(tabs)/groups',
-  },
-  {
-    id: '3',
-    title: 'Get Insights',
-    description: 'Receive personalized tips for better conversations',
-    icon: 'bulb',
-    color: '#F57C00',
-    bgColor: '#FFF3E0',
-    link: '/(tabs)/create',
-  },
-];
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Header />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.welcome}>Your Personal Companion for Confident Conversations</Text>
-          <Text style={styles.subtitle}>
-            Transform small talk into meaningful connections with SocialEase
-          </Text>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&h=400&fit=crop' }}
-            style={styles.heroImage}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Remember Every Detail</Text>
-          <Text style={styles.sectionDescription}>
-            Effortlessly create personalized profiles for everyone you meet. Record names, discussion topics, and key details, ensuring you're always prepared for your next interaction.
-          </Text>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&h=400&fit=crop' }}
-            style={styles.sectionImage}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Enhance Your Social Skills</Text>
-          <Text style={styles.sectionDescription}>
-            Our intelligent system analyzes your notes and offers tailored tips to improve future conversations, transforming small talk into meaningful connections.
-          </Text>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=400&fit=crop' }}
-            style={styles.sectionImage}
-          />
-        </View>
-
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Key Features</Text>
-          <View style={styles.features}>
-            {features.map(feature => (
-              <Link key={feature.id} href={feature.link} asChild>
-                <Pressable style={styles.feature}>
-                  <View style={[styles.featureIcon, { backgroundColor: feature.bgColor }]}>
-                    <Ionicons name={feature.icon} size={32} color={feature.color} />
-                  </View>
-                  <View style={styles.featureContent}>
-                    <Text style={styles.featureTitle}>{feature.title}</Text>
-                    <Text style={styles.featureDescription}>{feature.description}</Text>
-                  </View>
-                </Pressable>
-              </Link>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>Join the SocialEase Community Today</Text>
-          <Text style={styles.ctaDescription}>
-            Take control of your social experiences and build confidence with every interaction.
-          </Text>
-          <Link href="/(tabs)/create" asChild>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Hero Section */}
+      <LinearGradient
+        colors={['#4A90E2', '#357ABD']}
+        style={styles.heroSection}
+      >
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>Your Personal Companion for Confident Conversations</Text>
+          <Text style={styles.heroSubtitle}>Navigate social interactions with ease and confidence</Text>
+          <Link href="/profile/new" asChild>
             <Pressable style={styles.ctaButton}>
-              <Text style={styles.ctaButtonText}>Get Started</Text>
+              <Text style={styles.ctaButtonText}>Create Your First Profile</Text>
             </Pressable>
           </Link>
         </View>
-      </ScrollView>
-    </View>
+      </LinearGradient>
+
+      {/* Features Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Key Features</Text>
+        
+        <View style={styles.featureCard}>
+          <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
+            <Ionicons name="people" size={24} color="#1976D2" />
+          </View>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>Remember Every Detail</Text>
+            <Text style={styles.featureDescription}>
+              Create personalized profiles for everyone you meet. Never forget a name or important detail again.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureCard}>
+          <View style={[styles.featureIcon, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="analytics" size={24} color="#388E3C" />
+          </View>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>Enhance Social Skills</Text>
+            <Text style={styles.featureDescription}>
+              Get tailored tips to improve conversations and transform small talk into meaningful connections.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.featureCard}>
+          <View style={[styles.featureIcon, { backgroundColor: '#FFF3E0' }]}>
+            <Ionicons name="heart" size={24} color="#F57C00" />
+          </View>
+          <View style={styles.featureContent}>
+            <Text style={styles.featureTitle}>Track Your Progress</Text>
+            <Text style={styles.featureDescription}>
+              Monitor your social comfort levels and celebrate your improvements over time.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* How It Works Section */}
+      <View style={[styles.section, styles.sectionAlt]}>
+        <Text style={styles.sectionTitle}>How It Works</Text>
+        
+        <View style={styles.stepContainer}>
+          <View style={styles.step}>
+            <View style={[styles.stepIcon, { backgroundColor: '#E3F2FD' }]}>
+              <Text style={[styles.stepNumber, { color: '#1976D2' }]}>1</Text>
+            </View>
+            <Text style={styles.stepTitle}>Create Profiles</Text>
+            <Text style={styles.stepDescription}>Add details about people you meet</Text>
+          </View>
+
+          <View style={styles.step}>
+            <View style={[styles.stepIcon, { backgroundColor: '#E8F5E9' }]}>
+              <Text style={[styles.stepNumber, { color: '#388E3C' }]}>2</Text>
+            </View>
+            <Text style={styles.stepTitle}>Add Insights</Text>
+            <Text style={styles.stepDescription}>Record conversation topics and interests</Text>
+          </View>
+
+          <View style={styles.step}>
+            <View style={[styles.stepIcon, { backgroundColor: '#FFF3E0' }]}>
+              <Text style={[styles.stepNumber, { color: '#F57C00' }]}>3</Text>
+            </View>
+            <Text style={styles.stepTitle}>Stay Connected</Text>
+            <Text style={styles.stepDescription}>Build stronger relationships effortlessly</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Get Started Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Ready to Get Started?</Text>
+        <Text style={styles.getStartedText}>
+          Take control of your social experiences and build confidence with every interaction.
+        </Text>
+        <Link href="/profile/new" asChild>
+          <Pressable style={styles.ctaButton}>
+            <Text style={styles.ctaButtonText}>Create Your First Profile</Text>
+          </Pressable>
+        </Link>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -111,66 +115,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  content: {
-    paddingBottom: 40,
-  },
-  hero: {
+  heroSection: {
     padding: 24,
-    backgroundColor: '#F8F8F8',
+    paddingTop: 48,
+    paddingBottom: 48,
   },
-  welcome: {
-    fontSize: 32,
+  heroContent: {
+    alignItems: 'center',
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 16,
-    lineHeight: 40,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  subtitle: {
-    fontSize: 18,
-    color: '#666666',
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 24,
-  },
-  heroImage: {
-    width: '100%',
-    height: 240,
-    borderRadius: 16,
+    opacity: 0.9,
   },
   section: {
     padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+  },
+  sectionAlt: {
+    backgroundColor: '#F8F9FA',
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 12,
+    marginBottom: 24,
+    textAlign: 'center',
   },
-  sectionDescription: {
-    fontSize: 16,
-    color: '#666666',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  sectionImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 16,
-  },
-  featuresSection: {
-    padding: 24,
-    backgroundColor: '#F8F8F8',
-  },
-  features: {
-    gap: 16,
-  },
-  feature: {
+  featureCard: {
+    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -178,15 +163,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   featureIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
   },
   featureContent: {
     flex: 1,
-    marginLeft: 16,
   },
   featureTitle: {
     fontSize: 18,
@@ -199,35 +184,63 @@ const styles = StyleSheet.create({
     color: '#666666',
     lineHeight: 20,
   },
-  ctaSection: {
-    padding: 24,
+  stepContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  step: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
   },
-  ctaTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  stepIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 12,
-    textAlign: 'center',
   },
-  ctaDescription: {
+  stepNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  stepTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  getStartedText: {
     fontSize: 16,
-    color: '#FFFFFF',
-    opacity: 0.9,
+    color: '#666666',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
   },
   ctaButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 32,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
     paddingVertical: 16,
-    borderRadius: 30,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   ctaButtonText: {
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    textAlign: 'center',
   },
 });

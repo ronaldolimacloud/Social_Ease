@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   // Styles for the tabs container
   tabsContainer: {
-    backgroundColor: '#eb0f33',
+    backgroundColor: '#F8F8F8',
     borderBottomColor: '#E5E5E5',
     paddingVertical: 10,
     height: 45,

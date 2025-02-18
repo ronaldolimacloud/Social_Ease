@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,16 +38,37 @@ export default function NewProfileScreen() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [newInsight, setNewInsight] = useState('');
 
-  const handleSelectPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Sorry, we need camera roll permissions to make this work!',
+          [{ text: 'OK' }]
+        );
+      }
+    })();
+  }, []);
 
-    if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+  const handleSelectPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'Failed to select image. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
