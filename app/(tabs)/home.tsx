@@ -1,119 +1,77 @@
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, ImageBackground } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Section */}
-      <LinearGradient
-        colors={['#4A90E2', '#357ABD']}
-        style={styles.heroSection}
+    <View style={styles.container}>
+      <ImageBackground
+        source={require('../../assets/images/bg.png')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>Your Personal Companion for Confident Conversations</Text>
-          <Text style={styles.heroSubtitle}>Navigate social interactions with ease and confidence</Text>
+        <View style={styles.content}>
+          <Text style={styles.mainText}>CONNECT</Text>
+          <Text style={styles.mainText}>TALK</Text>
+          <Text style={styles.mainText}>THRIVE</Text>
+          
+          <Text style={styles.subText}>
+            AI-powered personalized insights to help you feel confident in any social situation.
+          </Text>
+
           <Link href="/profile/new" asChild>
-            <Pressable style={styles.ctaButton}>
-              <Text style={styles.ctaButtonText}>Create Your First Profile</Text>
+            <Pressable style={styles.getStartedButton}>
+              <Text style={styles.getStartedText}>GET STARTED</Text>
             </Pressable>
           </Link>
         </View>
-      </LinearGradient>
-
-      {/* Features Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Features</Text>
-        
-        <View style={styles.featureCard}>
-          <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
-            <Ionicons name="people" size={24} color="#1976D2" />
-          </View>
-          <View style={styles.featureContent}>
-            <Text style={styles.featureTitle}>Remember Every Detail</Text>
-            <Text style={styles.featureDescription}>
-              Create personalized profiles for everyone you meet. Never forget a name or important detail again.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.featureCard}>
-          <View style={[styles.featureIcon, { backgroundColor: '#E8F5E9' }]}>
-            <Ionicons name="analytics" size={24} color="#388E3C" />
-          </View>
-          <View style={styles.featureContent}>
-            <Text style={styles.featureTitle}>Enhance Social Skills</Text>
-            <Text style={styles.featureDescription}>
-              Get tailored tips to improve conversations and transform small talk into meaningful connections.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.featureCard}>
-          <View style={[styles.featureIcon, { backgroundColor: '#FFF3E0' }]}>
-            <Ionicons name="heart" size={24} color="#F57C00" />
-          </View>
-          <View style={styles.featureContent}>
-            <Text style={styles.featureTitle}>Track Your Progress</Text>
-            <Text style={styles.featureDescription}>
-              Monitor your social comfort levels and celebrate your improvements over time.
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* How It Works Section */}
-      <View style={[styles.section, styles.sectionAlt]}>
-        <Text style={styles.sectionTitle}>How It Works</Text>
-        
-        <View style={styles.stepContainer}>
-          <View style={styles.step}>
-            <View style={[styles.stepIcon, { backgroundColor: '#E3F2FD' }]}>
-              <Text style={[styles.stepNumber, { color: '#1976D2' }]}>1</Text>
-            </View>
-            <Text style={styles.stepTitle}>Create Profiles</Text>
-            <Text style={styles.stepDescription}>Add details about people you meet</Text>
-          </View>
-
-          <View style={styles.step}>
-            <View style={[styles.stepIcon, { backgroundColor: '#E8F5E9' }]}>
-              <Text style={[styles.stepNumber, { color: '#388E3C' }]}>2</Text>
-            </View>
-            <Text style={styles.stepTitle}>Add Insights</Text>
-            <Text style={styles.stepDescription}>Record conversation topics and interests</Text>
-          </View>
-
-          <View style={styles.step}>
-            <View style={[styles.stepIcon, { backgroundColor: '#FFF3E0' }]}>
-              <Text style={[styles.stepNumber, { color: '#F57C00' }]}>3</Text>
-            </View>
-            <Text style={styles.stepTitle}>Stay Connected</Text>
-            <Text style={styles.stepDescription}>Build stronger relationships effortlessly</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Get Started Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Ready to Get Started?</Text>
-        <Text style={styles.getStartedText}>
-          Take control of your social experiences and build confidence with every interaction.
-        </Text>
-        <Link href="/profile/new" asChild>
-          <Pressable style={styles.ctaButton}>
-            <Text style={styles.ctaButtonText}>Create Your First Profile</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </ScrollView>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  content: {
+    flex: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  mainText: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 56,
+  },
+  subText: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginTop: 20,
+    maxWidth: '80%',
+  },
+  getStartedButton: {
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    position: 'absolute',
+    bottom: 50,
+    alignSelf: 'center',
+    width: '90%',
+  },
+  getStartedText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   heroSection: {
     padding: 24,
@@ -218,13 +176,6 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 16,
-  },
-  getStartedText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
   },
   ctaButton: {
     backgroundColor: '#007AFF',
