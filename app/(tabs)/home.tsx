@@ -13,8 +13,8 @@ export default function HomeScreen() {
       >
         <View style={styles.content}>
           <Text style={styles.mainText}>CONNECT</Text>
-          <Text style={styles.mainText}>TALK</Text>
-          <Text style={styles.mainText}>THRIVE</Text>
+          <Text style={styles.darkText}>TALK</Text>
+          <Text style={styles.darkText}>THRIVE</Text>
           
           <Text style={styles.subText}>
             AI-powered personalized insights to help you feel confident in any social situation.
@@ -46,16 +46,23 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   mainText: {
-    fontSize: 48,
+    fontSize: 45,
     fontWeight: '800',
     color: '#FFFFFF',
-    lineHeight: 56,
+    lineHeight: 52,
+  },
+  darkText: {
+    fontSize: 45,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    lineHeight: 52,
   },
   subText: {
-    fontSize: 18,
-    color: '#FFFFFF',
+    fontSize: 17,
+    color: '#1A1A1A',
     marginTop: 20,
     maxWidth: '80%',
+    lineHeight: 22,
   },
   getStartedButton: {
     backgroundColor: '#1A1A1A',
