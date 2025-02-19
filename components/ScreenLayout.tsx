@@ -1,6 +1,11 @@
 import { View, ImageBackground, StyleSheet } from 'react-native';
+import { ReactNode } from 'react';
 
-export default function ScreenLayout({ children }) {
+type ScreenLayoutProps = {
+  children: ReactNode;
+};
+
+export default function ScreenLayout({ children }: ScreenLayoutProps) {
   return (
     <View style={styles.container}>
       <ImageBackground

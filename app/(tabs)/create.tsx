@@ -1,12 +1,22 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
 
 export default function CreateScreen() {
   return (
-    <View style={styles.container}>
-      <Header />
+    <LinearGradient
+      colors={['#90cac7', '#020e0e']}
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    >
+      <Header 
+        showSearch={false}
+        searchValue=""
+        onSearchChange={() => {}}
+      />
       <View style={styles.options}>
         <Link href="/profile/new" asChild>
           <Pressable style={styles.option}>
@@ -24,14 +34,13 @@ export default function CreateScreen() {
           </Pressable>
         </Link>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
   },
   options: {
     flex: 1,
