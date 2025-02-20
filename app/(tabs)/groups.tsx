@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
 
 type Group = {
@@ -55,15 +56,15 @@ export default function GroupsScreen() {
   };
 
   const renderGroup = ({ item }: { item: Group }) => (
-    <Pressable style={styles.groupCard}>
-      <View style={[
-        styles.groupIcon,
-        { backgroundColor: 
-          item.type === 'work' ? '#E3F2FD' : 
-          item.type === 'school' ? '#E8F5E9' : 
-          item.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
-        }
-      ]}>
+    <Pressable style={[
+      styles.groupCard,
+      { backgroundColor: 
+        item.type === 'work' ? '#C5EEED' : 
+        item.type === 'school' ? '#A6DDDC' : 
+        item.type === 'social' ? '#77B8B6' : '#437C79'
+      }
+    ]}>
+      <View style={styles.groupIcon}>
         <Ionicons 
           name={
             item.type === 'work' ? 'business' : 
@@ -72,26 +73,38 @@ export default function GroupsScreen() {
           } 
           size={24} 
           color={
-            item.type === 'work' ? '#1976D2' : 
-            item.type === 'school' ? '#388E3C' : 
-            item.type === 'social' ? '#F57C00' : '#757575'
+            item.type === 'work' ? '#437C79' : 
+            item.type === 'school' ? '#437C79' : 
+            item.type === 'social' ? '#437C79' : '#082322'
           }
         />
       </View>
       <View style={styles.groupInfo}>
-        <Text style={styles.groupName}>{item.name}</Text>
+        <Text style={[
+          styles.groupName,
+          { color: 
+            item.type === 'work' ? '#437C79' : 
+            item.type === 'school' ? '#437C79' : 
+            item.type === 'social' ? '#437C79' : '#082322'
+          }
+        ]}>{item.name}</Text>
       </View>
       <Pressable 
         style={styles.deleteButton}
         onPress={() => handleDeleteGroup(item.id)}
       >
-        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+        <Ionicons name="trash-outline" size={20} color="#437C79" />
       </Pressable>
     </Pressable>
   );
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#90cac7', '#020e0e']}
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    >
       <Header 
         showSearch={showSearch}
         searchValue={searchQuery}
@@ -108,21 +121,20 @@ export default function GroupsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
       />
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
   },
   list: {
     padding: 16,
+    backgroundColor: 'transparent',
   },
   groupCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -139,6 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   groupInfo: {
     flex: 1,

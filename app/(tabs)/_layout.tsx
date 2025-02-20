@@ -15,7 +15,7 @@ export default function TabLayout() {
         tabBarShowLabel: true,
       }}>
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
           title: 'Home',
           tabBarIcon: ({ size, color }) => (
@@ -24,7 +24,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="index"
+        name="profiles"
         options={{
           title: 'Profiles',
           tabBarIcon: ({ size, color }) => (
@@ -38,6 +38,15 @@ export default function TabLayout() {
           title: 'Create',
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="add-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: 'Groups',
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="people-circle" size={size} color={color} />
           ),
         }}
       />

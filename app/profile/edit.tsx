@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal 
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { globalProfiles, updateProfile } from '../(tabs)/index';
+import { globalProfiles, updateProfile } from '../(tabs)/profiles';
 import { globalGroups } from '../(tabs)/groups';
 
 type Profile = {

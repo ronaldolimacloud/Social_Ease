@@ -1,9 +1,10 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { globalProfiles } from '../(tabs)/index';
+import { globalProfiles } from '../(tabs)/profiles';
 
 type Insight = {
   id: string;
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
           title: '',
           headerRight: () => (
             <Pressable onPress={() => router.push(`/profile/edit?id=${profile.id}`)} style={{ marginRight: 16 }}>
-              <Ionicons name="create-outline" size={24} color="#007AFF" />
+              <Ionicons name="create-outline" size={24} color="#437C79" />
             </Pressable>
           ),
           headerStyle: {
@@ -139,7 +140,7 @@ export default function ProfileScreen() {
         <View style={styles.content}>
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="information-circle" size={24} color="#007AFF" />
+              <Ionicons name="information-circle" size={24} color="#437C79" />
               <Text style={styles.sectionTitle}>About</Text>
             </View>
             <Text style={styles.bio}>{profile.bio}</Text>
@@ -153,6 +154,7 @@ export default function ProfileScreen() {
                 onChangeText={setNewInsight}
                 placeholder="Add a quick note about this person..."
                 multiline
+                placeholderTextColor="#77B8B6"
               />
               <Pressable
                 onPress={handleAddInsight}
@@ -171,7 +173,7 @@ export default function ProfileScreen() {
                     <Pressable
                       onPress={() => handleRemoveInsight(insight.id)}
                       style={styles.removeInsight}>
-                      <Ionicons name="close-circle" size={20} color="#666666" />
+                      <Ionicons name="close-circle" size={20} color="#437C79" />
                     </Pressable>
                   </View>
                 ))}
@@ -189,11 +191,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#90cac7',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#437C79',
     textAlign: 'center',
     marginTop: 32,
   },
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 150,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#437C79',
     opacity: 0.1,
   },
   photoContainer: {
@@ -227,7 +229,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#437C79',
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -240,10 +242,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 8,
+    color: '#FFFFFF',
   },
   description: {
     fontSize: 16,
-    color: '#666666',
+    color: '#C5EEED',
     marginBottom: 8,
   },
   groupTags: {
@@ -253,13 +256,13 @@ const styles = StyleSheet.create({
   },
   groupTag: {
     fontSize: 14,
-    color: '#666666',
+    color: '#A6DDDC',
   },
   content: {
     padding: 16,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#C5EEED',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -278,11 +281,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
+    color: '#437C79',
   },
   bio: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#333333',
+    color: '#437C79',
   },
   insightInput: {
     flexDirection: 'row',
@@ -291,24 +295,25 @@ const styles = StyleSheet.create({
   },
   insightTextInput: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: '#A6DDDC',
     minHeight: 44,
+    color: '#437C79',
   },
   addInsightButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#437C79',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addInsightButtonDisabled: {
-    backgroundColor: '#E5E5E5',
+    backgroundColor: '#A6DDDC',
   },
   insightsList: {
     gap: 8,
@@ -316,21 +321,21 @@ const styles = StyleSheet.create({
   insightItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
   },
   insightText: {
     flex: 1,
     fontSize: 14,
-    color: '#333333',
+    color: '#437C79',
   },
   removeInsight: {
     marginLeft: 8,
   },
   noInsights: {
     fontSize: 14,
-    color: '#666666',
+    color: '#437C79',
     fontStyle: 'italic',
     textAlign: 'center',
   },

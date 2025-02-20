@@ -68,9 +68,7 @@ export default function Header({
 
 const styles = StyleSheet.create<Styles>({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#90cac7',
     paddingVertical: 12,
   },
   header: {
@@ -92,7 +90,7 @@ const styles = StyleSheet.create<Styles>({
     fontSize: 20,
     fontWeight: '600',
     marginLeft: 8,
-    color: '#1A1A1A',
+    color: '#020e0e',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -103,7 +101,7 @@ const styles = StyleSheet.create<Styles>({
   searchInput: {
     flex: 1,
     height: 36,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingHorizontal: 8,
     fontSize: 15,
