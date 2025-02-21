@@ -1,25 +1,69 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any unauthenticated user can "create", "read", "update", 
-and "delete" any "Todo" records.
-=========================================================================*/
 const schema = a.schema({
-  Todo: a
+  Profile: a
     .model({
-      content: a.string(),
+      firstName: a.string().required(),
+      lastName: a.string().required(),
+      description: a.string(),
+      bio: a.string(),
+      photoUrl: a.string(),
+      photoKey: a.string(),
+      // Add relationships
+      insights: a.hasMany('Insight', 'profileID'),
+      profileGroups: a.hasMany('ProfileGroup', 'profileID'),
+      owner: a.string(),
+      createdAt: a.datetime(),
+      updatedAt: a.datetime(),
     })
-    .authorization((allow) => [allow.guest()]),
+    .authorization((allow) => allow.owner()),
+
+  Group: a
+    .model({
+      name: a.string().required(),
+      type: a.string().required(),
+      description: a.string(),
+      memberCount: a.integer(),
+      // Add relationships
+      profileGroups: a.hasMany('ProfileGroup', 'groupID'),
+      owner: a.string(),
+      createdAt: a.datetime(),
+      updatedAt: a.datetime(),
+    })
+    .authorization((allow) => allow.owner()),
+
+  // Join table for Profile-Group many-to-many relationship
+  ProfileGroup: a
+    .model({
+      profileID: a.string(),
+      groupID: a.string(),
+      profile: a.belongsTo('Profile', 'profileID'),
+      group: a.belongsTo('Group', 'groupID'),
+      joinedDate: a.datetime(),
+      owner: a.string(),
+      createdAt: a.datetime(),
+      updatedAt: a.datetime(),
+    })
+    .authorization((allow) => allow.owner()),
+
+  Insight: a
+    .model({
+      text: a.string().required(),
+      timestamp: a.datetime().required(),
+      profileID: a.string(),
+      profile: a.belongsTo('Profile', 'profileID'),
+      owner: a.string(),
+      createdAt: a.datetime(),
+      updatedAt: a.datetime(),
+    })
+    .authorization((allow) => allow.owner()),
 });
 
 export type Schema = ClientSchema<typeof schema>;
-
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'iam',
+    defaultAuthorizationMode: 'userPool',
   },
 });
 

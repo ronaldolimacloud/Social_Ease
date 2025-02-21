@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal,
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { addProfile } from '../(tabs)/profiles';
+import { useProfile } from '../../lib/hooks/useProfile';
 
 type Group = {
   id: string;
@@ -39,6 +39,7 @@ export default function NewProfileScreen() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [newInsight, setNewInsight] = useState('');
+  const { createProfile, loading, error } = useProfile();
 
   useEffect(() => {
     (async () => {
@@ -92,20 +93,27 @@ export default function NewProfileScreen() {
 
   const isFormValid = firstName.trim();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isFormValid) return;
 
-    const newProfile = addProfile({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      description: description.trim(),
-      bio: bio.trim(),
-      photoUrl: photoUri || DEFAULT_PHOTO,
-      groups: selectedGroups.map(({ id, type, name }) => ({ id, type, name })),
-      insights,
-    });
+    try {
+      const newProfile = await createProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        description: description.trim(),
+        bio: bio.trim(),
+      }, photoUri || undefined);
 
-    router.replace('/(tabs)/profiles');
+      if (newProfile) {
+        router.replace('/(tabs)/profiles');
+      }
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        'Failed to create profile. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const toggleGroup = (group: Group) => {

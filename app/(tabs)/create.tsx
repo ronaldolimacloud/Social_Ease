@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
 
+
 export default function CreateScreen() {
+  
   return (
     <LinearGradient
       colors={['#90cac7', '#020e0e']}

@@ -1,73 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
 import { globalGroups } from './groups';
-
-// Define the Profile type interface that describes the shape of our profile data
-type Profile = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  description: string;
-  bio: string;
-  photoUrl: string;
-  // Array of insights with their own properties
-  insights: Array<{
-    id: string;
-    text: string;
-    timestamp: string;
-  }>;
-  // Array of groups the profile belongs to
-  groups: Array<{
-    id: string;
-    type: string;
-    name: string;
-  }>;
-};
-
-// Global variable to store profiles that persists across component re-renders
-// This acts as a simple in-memory database for the application
-export let globalProfiles: Profile[] = [
-  // Initial sample profile data
-  {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
-    description: 'Software Engineer',
-    bio: 'Full-stack developer with 5 years of experience in web and mobile development. Passionate about creating user-friendly applications and mentoring junior developers.',
-    photoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
-    insights: [
-      { id: '1', text: 'Loves hiking on weekends', timestamp: '2024-01-15T10:00:00Z' },
-      { id: '2', text: 'Has two dogs named Max and Ruby', timestamp: '2024-01-16T15:30:00Z' },
-    ],
-    groups: [
-      { id: '1', type: 'work', name: 'Engineering Team' },
-      { id: '2', type: 'school', name: 'Computer Science' },
-    ],
-  },
-];
-
-// Function to update a profile in the global profiles array
-export const updateProfile = (updatedProfile: Profile) => {
-  const profileIndex = globalProfiles.findIndex(p => p.id === updatedProfile.id);
-  if (profileIndex !== -1) {
-    globalProfiles = [...globalProfiles.slice(0, profileIndex), updatedProfile, ...globalProfiles.slice(profileIndex + 1)];
-  }
-};
-
-// Utility function to add a new profile to the global profiles array
-// Takes a profile without an ID and generates one based on the array length
-export const addProfile = (profile: Omit<Profile, 'id'>) => {
-  const newProfile = {
-    ...profile,
-    id: String(globalProfiles.length + 1),
-  };
-  globalProfiles = [...globalProfiles, newProfile];
-  return newProfile;
-};
+import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
 
 // Function to get all available groups for filtering
 // Returns an array of group names, always including 'All' as the first option
@@ -77,9 +15,11 @@ const getUniqueGroups = (): string[] => {
 
 // Main component for displaying profiles
 export default function ProfilesScreen() {
+  // Use our new profiles hook
+  const { profiles, loading, error, refetch } = useProfiles();
+  
   // State management using React hooks
   const [selectedGroup, setSelectedGroup] = useState('All'); // Currently selected group filter
-  const [profiles, setProfiles] = useState<Profile[]>(globalProfiles); // List of profiles to display
   const [groupNames, setGroupNames] = useState<string[]>(getUniqueGroups()); // Available group names for filtering
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,17 +29,10 @@ export default function ProfilesScreen() {
     setGroupNames(getUniqueGroups());
   }, [globalGroups]);
 
-  // Effect to update profiles when the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      setProfiles([...globalProfiles]);
-    }, [])
-  );
-
   // Filter profiles based on selected group and search query
   const filteredProfiles = profiles.filter(profile => {
     const matchesGroup = selectedGroup === 'All' || 
-      profile.groups.some(group => group.name === selectedGroup);
+      profile.groups?.some(group => group.name === selectedGroup);
     
     if (!matchesGroup) return false;
 
@@ -109,9 +42,9 @@ export default function ProfilesScreen() {
     return (
       profile.firstName.toLowerCase().includes(searchLower) ||
       profile.lastName.toLowerCase().includes(searchLower) ||
-      profile.description.toLowerCase().includes(searchLower) ||
-      profile.bio.toLowerCase().includes(searchLower) ||
-      profile.groups.some(group => group.name.toLowerCase().includes(searchLower))
+      (profile.description?.toLowerCase().includes(searchLower) ?? false) ||
+      (profile.bio?.toLowerCase().includes(searchLower) ?? false) ||
+      (profile.groups?.some(group => group.name.toLowerCase().includes(searchLower)) ?? false)
     );
   });
 
@@ -119,59 +52,60 @@ export default function ProfilesScreen() {
   const renderProfile = ({ item }: { item: Profile }) => (
     <Link href={`/profile/${item.id}`} asChild>
       <Pressable style={styles.profileCard}>
-        <Image source={{ uri: item.photoUrl }} style={styles.profileImage} />
+        <Image 
+          source={{ uri: item.photoUrl ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' }} 
+          style={styles.profileImage} 
+        />
         <View style={styles.profileInfo}>
           <Text style={styles.name}>{`${item.firstName} ${item.lastName}`}</Text>
-          <Text style={styles.description}>{item.description}</Text>
-          <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>
+          {item.description && <Text style={styles.description}>{item.description}</Text>}
+          {item.bio && <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>}
           {/* Group tags section */}
-          <View style={styles.groupTags}>
-            {item.groups.map(group => (
-              <View 
-                key={group.id} 
-                style={[
-                  styles.groupTag,
-                  { backgroundColor: 
-                    // Dynamic background color based on group type
-                    group.type === 'work' ? '#C5EEED' : 
-                    group.type === 'school' ? '#A6DDDC' : 
-                    group.type === 'social' ? '#77B8B6' : '#437C79' 
-                  }
-                ]}>
-                <Ionicons 
-                  name={
-                    // Dynamic icon based on group type
-                    group.type === 'work' ? 'business' : 
-                    group.type === 'school' ? 'school' : 
-                    group.type === 'social' ? 'people' : 'grid'
-                  } 
-                  size={12} 
-                  color={
-                    // Dynamic icon color based on group type
-                    group.type === 'work' ? '#437C79' : 
-                    group.type === 'school' ? '#437C79' : 
-                    group.type === 'social' ? '#437C79' : '#082322'
-                  }
-                  style={styles.groupTagIcon}
-                />
-                <Text 
+          {item.groups && item.groups.length > 0 && (
+            <View style={styles.groupTags}>
+              {item.groups.map(group => (
+                <View 
+                  key={group.id} 
                   style={[
-                    styles.groupTagText,
-                    { color: 
-                      // Dynamic text color based on group type
+                    styles.groupTag,
+                    { backgroundColor: 
+                      group.type === 'work' ? '#C5EEED' : 
+                      group.type === 'school' ? '#A6DDDC' : 
+                      group.type === 'social' ? '#77B8B6' : '#437C79' 
+                    }
+                  ]}>
+                  <Ionicons 
+                    name={
+                      group.type === 'work' ? 'business' : 
+                      group.type === 'school' ? 'school' : 
+                      group.type === 'social' ? 'people' : 'grid'
+                    } 
+                    size={12} 
+                    color={
                       group.type === 'work' ? '#437C79' : 
                       group.type === 'school' ? '#437C79' : 
-                      group.type === 'social' ? '#437C79' : '#082322' 
+                      group.type === 'social' ? '#437C79' : '#082322'
                     }
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {group.name}
-                </Text>
-              </View>
-            ))}
-          </View>
+                    style={styles.groupTagIcon}
+                  />
+                  <Text 
+                    style={[
+                      styles.groupTagText,
+                      { color: 
+                        group.type === 'work' ? '#437C79' : 
+                        group.type === 'school' ? '#437C79' : 
+                        group.type === 'social' ? '#437C79' : '#082322' 
+                      }
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {group.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </Pressable>
     </Link>
@@ -186,16 +120,11 @@ export default function ProfilesScreen() {
   // Main render function
   return (
     <LinearGradient
-      // Define gradient colors from light teal (#90cac7) to dark green-black (#020e0e)
       colors={['#90cac7', '#020e0e']}
-      // Apply container styles defined in StyleSheet
       style={styles.container}
-      // Start gradient from top-left (0,0)
       start={{ x: 0, y: 0 }}
-      // End gradient at bottom-left (0,1), creating a vertical gradient
       end={{ x: 0, y: 1 }}
-      // Add locations prop to control color distribution
-      locations={[0.5, 1]} // This will show the top color for 50% of the gradient
+      locations={[0.5, 1]}
     >
       <Header 
         showSearch={showSearch}
@@ -229,16 +158,29 @@ export default function ProfilesScreen() {
         ))}
       </ScrollView>
 
-      <FlatList
-        onLayout={logLayout('FlatList')}
-        data={filteredProfiles}
-        renderItem={renderProfile}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        scrollEnabled={true}
-        showsVerticalScrollIndicator={false}
-        alwaysBounceVertical={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#437C79" />
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error loading profiles</Text>
+          <Pressable style={styles.retryButton} onPress={refetch}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          onLayout={logLayout('FlatList')}
+          data={filteredProfiles}
+          renderItem={renderProfile}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          scrollEnabled={true}
+          showsVerticalScrollIndicator={false}
+          alwaysBounceVertical={false}
+        />
+      )}
     </LinearGradient>
   );
 }
@@ -246,6 +188,33 @@ export default function ProfilesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#437C79',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   tabsContainer: {
     borderBottomColor: '#020e0e',
