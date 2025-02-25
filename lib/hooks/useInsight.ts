@@ -13,8 +13,6 @@ export const useInsight = (profileId: string) => {
         timestamp: new Date().toISOString(),
         profileID: profileId,
         owner: '', // Amplify will fill this
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       });
       return newInsight;
     } catch (err) {

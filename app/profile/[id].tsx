@@ -1,10 +1,10 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput } from 'react-native';
-import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { globalProfiles } from '../(tabs)/profiles';
+import { useProfile } from '../../lib/hooks/useProfile';
 
 type Insight = {
   id: string;
@@ -31,11 +31,34 @@ export default function ProfileScreen() {
   const { id } = useLocalSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [newInsight, setNewInsight] = useState('');
+  const { getProfile, updateProfile } = useProfile();
 
+  // Function to fetch profile data
+  const fetchProfile = async () => {
+    try {
+      if (typeof id === 'string') {
+        console.log("Fetching profile data for ID:", id);
+        const profileData = await getProfile(id, true);
+        setProfile(profileData as unknown as Profile);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  // Initial fetch on mount
   useEffect(() => {
-    const foundProfile = globalProfiles.find(p => p.id === id);
-    setProfile(foundProfile || null);
+    fetchProfile();
   }, [id]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log("Profile screen is focused, refreshing data");
+      fetchProfile();
+      return () => {}; // cleanup function
+    }, [id])
+  );
 
   const handleEditPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -45,13 +68,13 @@ export default function ProfileScreen() {
       quality: 1,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       // Handle photo update
       console.log('New photo selected:', result.assets[0].uri);
     }
   };
 
-  const handleAddInsight = () => {
+  const handleAddInsight = async () => {
     if (!profile || !newInsight.trim()) return;
 
     const insight: Insight = {
@@ -60,34 +83,67 @@ export default function ProfileScreen() {
       timestamp: new Date().toISOString(),
     };
 
-    const updatedProfile = {
-      ...profile,
-      insights: [...profile.insights, insight],
-    };
-
-    // Update both the local state and the global profiles
-    setProfile(updatedProfile);
-    const profileIndex = globalProfiles.findIndex(p => p.id === profile.id);
-    if (profileIndex !== -1) {
-      globalProfiles[profileIndex] = updatedProfile;
+    try {
+      // Create updated profile object with the new insight
+      const updatedProfile = {
+        ...profile,
+        insights: [...profile.insights, insight],
+      };
+      
+      // Call updateProfile with correct parameters
+      await updateProfile(
+        profile.id,
+        {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          description: profile.description,
+          bio: profile.bio,
+          photoUrl: profile.photoUrl
+        },
+        undefined, // No new photo
+        [{ text: insight.text, timestamp: insight.timestamp }], // Insights to add
+        [], // No insights to remove
+        [], // No groups to add
+        [] // No groups to remove
+      );
+      
+      setProfile(updatedProfile);
+      setNewInsight('');
+    } catch (error) {
+      console.error('Error adding insight:', error);
     }
-
-    setNewInsight('');
   };
 
-  const handleRemoveInsight = (insightId: string) => {
+  const handleRemoveInsight = async (insightId: string) => {
     if (!profile) return;
 
-    const updatedProfile = {
-      ...profile,
-      insights: profile.insights.filter(insight => insight.id !== insightId),
-    };
-
-    // Update both the local state and the global profiles
-    setProfile(updatedProfile);
-    const profileIndex = globalProfiles.findIndex(p => p.id === profile.id);
-    if (profileIndex !== -1) {
-      globalProfiles[profileIndex] = updatedProfile;
+    try {
+      // Create updated profile object without the removed insight
+      const updatedProfile = {
+        ...profile,
+        insights: profile.insights.filter(insight => insight.id !== insightId),
+      };
+      
+      // Call updateProfile with correct parameters
+      await updateProfile(
+        profile.id,
+        {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          description: profile.description,
+          bio: profile.bio,
+          photoUrl: profile.photoUrl
+        },
+        undefined, // No new photo
+        [], // No insights to add
+        [insightId], // Insights to remove
+        [], // No groups to add
+        [] // No groups to remove
+      );
+      
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.error('Error removing insight:', error);
     }
   };
 
@@ -120,7 +176,14 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.headerBackground} />
           <Pressable onPress={handleEditPhoto} style={styles.photoContainer}>
-            <Image source={{ uri: profile.photoUrl }} style={styles.photo} />
+            <Image 
+              source={{ 
+                uri: profile.photoUrl && profile.photoUrl.trim() !== '' 
+                  ? profile.photoUrl 
+                  : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
+              }} 
+              style={styles.photo} 
+            />
             <View style={styles.editPhotoButton}>
               <Ionicons name="camera" size={20} color="#FFFFFF" />
             </View>

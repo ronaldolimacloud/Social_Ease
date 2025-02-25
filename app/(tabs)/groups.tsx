@@ -1,38 +1,63 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
+import GroupItem from '../../components/GroupItem';
+import { useGroup } from '../../lib/hooks/useGroup';
+import { client } from '../../lib/amplify';
 
+// Simplified Group type definition
 type Group = {
   id: string;
   name: string;
-  type: string;
+  type?: string;
   description?: string;
-};
-
-// Use a global variable to store groups across component re-renders
-export let globalGroups: Group[] = [
-  { id: '1', type: 'work', name: 'Engineering Team' },
-  { id: '2', type: 'school', name: 'Computer Science' },
-  { id: '3', type: 'social', name: 'Book Club' },
-  { id: '4', type: 'work', name: 'Design Team' },
-  { id: '5', type: 'school', name: 'Math Club' },
-];
-
-export const addGroup = (group: Omit<Group, 'id'>) => {
-  const newGroup = {
-    ...group,
-    id: String(globalGroups.length + 1),
-  };
-  globalGroups = [...globalGroups, newGroup];
-  return newGroup;
+  _deleted?: boolean;
+  _lastChangedAt?: number;
+  _version?: number;
 };
 
 export default function GroupsScreen() {
-  const [groups, setGroups] = useState<Group[]>(globalGroups);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [syncingGroups, setSyncingGroups] = useState<Record<string, boolean>>({});
+  const [isSynced, setIsSynced] = useState(false);
+  const { deleteGroup, loading, error } = useGroup();
+
+  useEffect(() => {
+    // Use observeQuery for real-time updates
+    const subscription = client.models.Group.observeQuery().subscribe({
+      next: ({ items, isSynced: syncStatus }) => {
+        // Filter out any deleted items
+        const validGroups = items
+          .filter(item => !item._deleted)
+          .map(item => ({
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            description: item.description || undefined,
+            _deleted: item._deleted,
+            _lastChangedAt: item._lastChangedAt,
+            _version: item._version,
+          }));
+  
+        setGroups(validGroups);
+        setIsSynced(syncStatus);
+      },
+      error: (error) => {
+        console.error('ObserveQuery error:', error);
+        Alert.alert(
+          "Error",
+          "There was an error loading groups. Please try again later.",
+          [{ text: "OK" }]
+        );
+      }
+    });
+
+    // Clean up subscription on unmount
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleDeleteGroup = (groupId: string) => {
     Alert.alert(
@@ -46,57 +71,92 @@ export default function GroupsScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            globalGroups = globalGroups.filter(g => g.id !== groupId);
-            setGroups(globalGroups);
+          onPress: async () => {
+            try {
+              // Mark this group as syncing
+              setSyncingGroups(prev => ({ ...prev, [groupId]: true }));
+              
+              // Delete from database
+              await deleteGroup(groupId);
+              
+              // Remove from syncing state
+              setSyncingGroups(prev => {
+                const newState = { ...prev };
+                delete newState[groupId];
+                return newState;
+              });
+            } catch (error) {
+              console.error('Error deleting group:', error);
+              
+              // Remove from syncing state
+              setSyncingGroups(prev => {
+                const newState = { ...prev };
+                delete newState[groupId];
+                return newState;
+              });
+              
+              Alert.alert(
+                "Error",
+                "Failed to delete group. Please try again.",
+                [{ text: "OK" }]
+              );
+            }
           }
         }
       ]
     );
   };
 
-  const renderGroup = ({ item }: { item: Group }) => (
-    <Pressable style={[
-      styles.groupCard,
-      { backgroundColor: 
-        item.type === 'work' ? '#C5EEED' : 
-        item.type === 'school' ? '#A6DDDC' : 
-        item.type === 'social' ? '#77B8B6' : '#437C79'
-      }
-    ]}>
-      <View style={styles.groupIcon}>
-        <Ionicons 
-          name={
-            item.type === 'work' ? 'business' : 
-            item.type === 'school' ? 'school' : 
-            item.type === 'social' ? 'people' : 'grid'
-          } 
-          size={24} 
-          color={
-            item.type === 'work' ? '#437C79' : 
-            item.type === 'school' ? '#437C79' : 
-            item.type === 'social' ? '#437C79' : '#082322'
-          }
-        />
-      </View>
-      <View style={styles.groupInfo}>
-        <Text style={[
-          styles.groupName,
-          { color: 
-            item.type === 'work' ? '#437C79' : 
-            item.type === 'school' ? '#437C79' : 
-            item.type === 'social' ? '#437C79' : '#082322'
-          }
-        ]}>{item.name}</Text>
-      </View>
-      <Pressable 
-        style={styles.deleteButton}
-        onPress={() => handleDeleteGroup(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#437C79" />
-      </Pressable>
-    </Pressable>
-  );
+  const renderContent = () => {
+    if (loading && groups.length === 0) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#437C79" />
+        </View>
+      );
+    }
+
+    if (error && groups.length === 0) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>Failed to load groups</Text>
+          <Pressable style={styles.retryButton} onPress={() => {}}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Filter groups based on search query
+    const filteredGroups = searchQuery 
+      ? groups.filter(group => 
+          group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          group.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (group.description && group.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+      : groups;
+
+    return (
+      <FlatList
+        data={filteredGroups}
+        renderItem={({ item }) => (
+          <GroupItem 
+            group={item} 
+            onDelete={handleDeleteGroup}
+            syncing={syncingGroups[item.id] || false}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No groups found</Text>
+            <Text style={styles.emptySubText}>Create a new group to get started</Text>
+          </View>
+        }
+      />
+    );
+  };
 
   return (
     <LinearGradient
@@ -115,12 +175,13 @@ export default function GroupsScreen() {
           setSearchQuery('');
         }}
       />
-      <FlatList
-        data={groups}
-        renderItem={renderGroup}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-      />
+      {!isSynced && (
+        <View style={styles.syncingBanner}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.syncingText}>Syncing data...</Text>
+        </View>
+      )}
+      {renderContent()}
     </LinearGradient>
   );
 }
@@ -129,40 +190,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#437C79',
+    padding: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   list: {
     padding: 16,
     backgroundColor: 'transparent',
   },
-  groupCard: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    alignItems: 'center',
-  },
-  groupIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  groupInfo: {
+  emptyContainer: {
     flex: 1,
-    marginLeft: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
   },
-  groupName: {
-    fontSize: 16,
+  emptyText: {
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: '600',
+    marginBottom: 8,
   },
-  deleteButton: {
+  emptySubText: {
+    color: '#FFFFFF',
+    opacity: 0.7,
+    textAlign: 'center',
+  },
+  syncingBanner: {
+    backgroundColor: 'rgba(67, 124, 121, 0.8)',
+    flexDirection: 'row',
     padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncingText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 14,
   },
 });

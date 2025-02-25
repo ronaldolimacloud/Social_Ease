@@ -1,43 +1,73 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { addGroup } from '../(tabs)/groups';
+import { useGroup } from '../../lib/hooks/useGroup';
 
 export default function NewGroupScreen() {
   const [name, setName] = useState('');
+  const { createGroup, loading, error } = useGroup();
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Group name is required");
+      return;
+    }
 
-    addGroup({
-      name: name.trim(),
-      type: 'other', // Default type
-    });
+    try {
+      // Create the group with just a name
+      const result = await createGroup({
+        name: name.trim(),
+      });
 
-    router.push('/(tabs)/groups');
+      if (!result.data) {
+        throw new Error('Failed to create group - no data returned');
+      }
+      
+      console.log('Group created successfully:', result.data);
+      
+      // Navigate back to groups list
+      router.push('/(tabs)/groups');
+    } catch (err) {
+      console.error('Error in handleSave:', err);
+      Alert.alert(
+        "Error",
+        error || "Failed to create group. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Group Name<Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={[styles.input, !name.trim() && styles.inputError]}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter group name"
-            autoFocus
-          />
-        </View>
+      <View style={styles.formContainer}>
+        <Text style={styles.label}>Group Name</Text>
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholder="Enter group name"
+          placeholderTextColor="#999"
+          autoFocus
+        />
+      </View>
 
-        <Pressable
-          style={[styles.saveButton, !name.trim() && styles.saveButtonDisabled]}
+      <View style={styles.buttonContainer}>
+        <Pressable 
+          style={styles.cancelButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.saveButton, !name.trim() && styles.disabledButton]}
           onPress={handleSave}
-          disabled={!name.trim()}>
-          <Text style={[styles.saveButtonText, !name.trim() && styles.saveButtonTextDisabled]}>
-            Create Group
-          </Text>
+          disabled={!name.trim() || loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Create Group</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -48,50 +78,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
-  },
-  form: {
     padding: 16,
+    justifyContent: 'space-between',
   },
-  inputGroup: {
-    marginBottom: 16,
+  formContainer: {
+    flex: 1,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 8,
-    color: '#333333',
-  },
-  required: {
-    color: '#FF3B30',
-    marginLeft: 4,
+    color: '#333',
   },
   input: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: '#DDD',
+    marginBottom: 16,
+    fontSize: 16,
   },
-  inputError: {
-    borderColor: '#FF3B30',
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    borderRadius: 12,
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#437C79',
+    borderRadius: 8,
+    marginLeft: 8,
     alignItems: 'center',
-    marginTop: 24,
   },
-  saveButtonDisabled: {
-    backgroundColor: '#E5E5E5',
+  disabledButton: {
+    backgroundColor: '#AACAC9',
   },
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  saveButtonTextDisabled: {
-    color: '#999999',
   },
 });

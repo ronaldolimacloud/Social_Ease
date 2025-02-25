@@ -4,35 +4,70 @@ import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
-import { globalGroups } from './groups';
 import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
+import { client } from '../../lib/amplify';
 
-// Function to get all available groups for filtering
-// Returns an array of group names, always including 'All' as the first option
-const getUniqueGroups = (): string[] => {
-  return ['All', ...globalGroups.map(group => group.name)];
+// Updated function to use actual groups from the database
+const useGroups = () => {
+  const [groupNames, setGroupNames] = useState<string[]>(['All']);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch groups and update state
+    const subscription = client.models.Group.observeQuery().subscribe({
+      next: ({ items, isSynced }) => {
+        if (isSynced) {
+          // Filter out deleted groups and extract names
+          const validGroups = items
+            .filter(item => !(item as any)._deleted)
+            .map(item => item.name);
+          
+          // Add 'All' as the first option and ensure unique names
+          setGroupNames(['All', ...Array.from(new Set(validGroups))]);
+          setLoading(false);
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching groups:', error);
+        setLoading(false);
+      }
+    });
+
+    // Clean up subscription
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return { groupNames, loading };
 };
 
 // Main component for displaying profiles
 export default function ProfilesScreen() {
   // Use our new profiles hook
-  const { profiles, loading, error, refetch } = useProfiles();
+  const { profiles, loading: profilesLoading, error, refetch } = useProfiles();
+  // Use the new groups hook
+  const { groupNames, loading: groupsLoading } = useGroups();
   
   // State management using React hooks
   const [selectedGroup, setSelectedGroup] = useState('All'); // Currently selected group filter
-  const [groupNames, setGroupNames] = useState<string[]>(getUniqueGroups()); // Available group names for filtering
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Effect hook to update group names whenever global groups change
-  useEffect(() => {
-    setGroupNames(getUniqueGroups());
-  }, [globalGroups]);
-
   // Filter profiles based on selected group and search query
   const filteredProfiles = profiles.filter(profile => {
+    // Check if the profile has groups to begin with
+    if (!profile.groups || !Array.isArray(profile.groups)) {
+      // Only include in the "All" tab if groups aren't available
+      return selectedGroup === 'All';
+    }
+
+    // For debugging
+    if (selectedGroup !== 'All') {
+      console.log(`Filtering for group: ${selectedGroup}`);
+      console.log(`Profile ${profile.firstName} has groups:`, JSON.stringify(profile.groups));
+    }
+
     const matchesGroup = selectedGroup === 'All' || 
-      profile.groups?.some(group => group.name === selectedGroup);
+      profile.groups.some(group => group.name.toLowerCase() === selectedGroup.toLowerCase());
     
     if (!matchesGroup) return false;
 
@@ -53,7 +88,11 @@ export default function ProfilesScreen() {
     <Link href={`/profile/${item.id}`} asChild>
       <Pressable style={styles.profileCard}>
         <Image 
-          source={{ uri: item.photoUrl ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' }} 
+          source={{ 
+            uri: (item.photoUrl && item.photoUrl.trim() !== '') 
+              ? item.photoUrl 
+              : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' 
+          }} 
           style={styles.profileImage} 
         />
         <View style={styles.profileInfo}>
@@ -143,22 +182,29 @@ export default function ProfilesScreen() {
         style={[styles.tabsContainer, { backgroundColor: 'transparent' }]}
         onLayout={logLayout('TabsScrollView')}
         contentContainerStyle={styles.tabs}>
-        {groupNames.map((groupName) => (
-          <Pressable
-            key={groupName}
-            onPress={() => setSelectedGroup(groupName)}>
-            <Text
-              style={[
-                styles.tabText,
-                selectedGroup === groupName && styles.tabTextActive,
-              ]}>
-              {groupName}
-            </Text>
-          </Pressable>
-        ))}
+        {groupsLoading ? (
+          <View style={styles.groupLoading}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.groupLoadingText}>Loading groups...</Text>
+          </View>
+        ) : (
+          groupNames.map((groupName) => (
+            <Pressable
+              key={groupName}
+              onPress={() => setSelectedGroup(groupName)}>
+              <Text
+                style={[
+                  styles.tabText,
+                  selectedGroup === groupName && styles.tabTextActive,
+                ]}>
+                {groupName}
+              </Text>
+            </Pressable>
+          ))
+        )}
       </ScrollView>
 
-      {loading ? (
+      {profilesLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#437C79" />
         </View>
@@ -305,5 +351,18 @@ const styles = StyleSheet.create({
   },
   groupTagIcon: {
     marginRight: 3,
+  },
+  groupLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    minWidth: 120,
+    gap: 8,
+  },
+  groupLoadingText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
 });

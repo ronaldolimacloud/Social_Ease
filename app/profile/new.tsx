@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, findNodeHandle } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, findNodeHandle, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
+import { useGroup } from '../../lib/hooks/useGroup';
 
 type Group = {
   id: string;
-  type: string;
   name: string;
-  memberCount?: number;
+  type?: string;
+  description?: string;
 };
 
 type Insight = {
@@ -17,14 +18,6 @@ type Insight = {
   text: string;
   timestamp: string;
 };
-
-const mockGroups: Group[] = [
-  { id: '1', type: 'work', name: 'Engineering Team', memberCount: 12 },
-  { id: '2', type: 'school', name: 'Computer Science', memberCount: 45 },
-  { id: '3', type: 'social', name: 'Book Club', memberCount: 8 },
-  { id: '4', type: 'work', name: 'Design Team', memberCount: 15 },
-  { id: '5', type: 'school', name: 'Math Club', memberCount: 20 },
-];
 
 const DEFAULT_PHOTO = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop';
 
@@ -36,10 +29,47 @@ export default function NewProfileScreen() {
   const [bio, setBio] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [newInsight, setNewInsight] = useState('');
+  const [loadingGroups, setLoadingGroups] = useState(false);
   const { createProfile, loading, error } = useProfile();
+  const { listGroups } = useGroup();
+
+  // Fetch available groups when the component mounts or when the modal is opened
+  useEffect(() => {
+    if (showGroupModal) {
+      fetchGroups();
+    }
+  }, [showGroupModal]);
+
+  // Fetch groups from the database
+  const fetchGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const result = await listGroups();
+      if (result.data) {
+        // Map the data to our Group type
+        const groups = result.data.map(group => ({
+          id: group.id,
+          name: group.name,
+          type: group.type,
+          description: group.description || undefined
+        }));
+        setAvailableGroups(groups);
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load groups. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -102,7 +132,16 @@ export default function NewProfileScreen() {
         lastName: lastName.trim(),
         description: description.trim(),
         bio: bio.trim(),
-      }, photoUri || undefined);
+      }, photoUri || undefined, 
+      insights.map(insight => ({
+        text: insight.text,
+        timestamp: insight.timestamp
+      })),
+      selectedGroups.map(group => ({
+        id: group.id,
+        name: group.name,
+        type: group.type || 'general' // Provide a default value for type
+      })));
 
       if (newProfile) {
         router.replace('/(tabs)/profiles');
@@ -153,7 +192,14 @@ export default function NewProfileScreen() {
           <View style={styles.photoContainer}>
             <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
               {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.photo} />
+                <Image 
+                  source={{ 
+                    uri: photoUri && photoUri.trim() !== '' 
+                      ? photoUri 
+                      : DEFAULT_PHOTO
+                  }} 
+                  style={styles.photo} 
+                />
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <Ionicons name="camera" size={32} color="#666666" />
@@ -303,49 +349,42 @@ export default function NewProfileScreen() {
                 <Ionicons name="close" size={24} color="#666666" />
               </Pressable>
             </View>
-            <ScrollView style={styles.groupsList}>
-              {mockGroups.map(group => {
-                const isSelected = selectedGroups.some(g => g.id === group.id);
-                return (
-                  <Pressable
-                    key={group.id}
-                    style={[styles.groupItem, isSelected && styles.groupItemSelected]}
-                    onPress={() => toggleGroup(group)}>
-                    <View style={[
-                      styles.groupIcon,
-                      { backgroundColor: 
-                        group.type === 'work' ? '#E3F2FD' : 
-                        group.type === 'school' ? '#E8F5E9' : 
-                        group.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
-                      }
-                    ]}>
-                      <Ionicons 
-                        name={
-                          group.type === 'work' ? 'business' : 
-                          group.type === 'school' ? 'school' : 
-                          group.type === 'social' ? 'people' : 'grid'
-                        } 
-                        size={24} 
-                        color={
-                          group.type === 'work' ? '#1976D2' : 
-                          group.type === 'school' ? '#388E3C' : 
-                          group.type === 'social' ? '#F57C00' : '#757575'
-                        }
-                      />
-                    </View>
-                    <View style={styles.groupInfo}>
-                      <Text style={styles.groupName}>{group.name}</Text>
-                      <Text style={styles.groupType}>
-                        {group.type.charAt(0).toUpperCase() + group.type.slice(1)}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+
+            {loadingGroups ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Loading groups...</Text>
+              </View>
+            ) : availableGroups.length === 0 ? (
+              <View style={styles.emptyGroupsContainer}>
+                <Ionicons name="people" size={48} color="#CCCCCC" />
+                <Text style={styles.emptyGroupsText}>No groups available</Text>
+                <Text style={styles.emptyGroupsSubText}>Create groups in the Groups tab</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.groupsList}>
+                {availableGroups.map(group => {
+                  const isSelected = selectedGroups.some(g => g.id === group.id);
+                  return (
+                    <Pressable
+                      key={group.id}
+                      style={[styles.groupItem, isSelected && styles.groupItemSelected]}
+                      onPress={() => toggleGroup(group)}>
+                      <View style={styles.groupIcon}>
+                        <Ionicons name="people" size={24} color="#007AFF" />
+                      </View>
+                      <View style={styles.groupInfo}>
+                        <Text style={styles.groupName}>{group.name}</Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
             <Pressable 
               style={styles.modalDone}
               onPress={() => setShowGroupModal(false)}>
@@ -577,9 +616,30 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 2,
   },
-  groupType: {
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666666',
+  },
+  emptyGroupsContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyGroupsText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  emptyGroupsSubText: {
+    marginTop: 8,
     fontSize: 14,
     color: '#666666',
+    textAlign: 'center',
   },
   modalDone: {
     margin: 16,
