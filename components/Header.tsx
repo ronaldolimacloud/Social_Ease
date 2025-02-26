@@ -50,14 +50,14 @@ export default function Header({
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1516575334481-f85287c2c82d?w=200&h=200&fit=crop' }} 
+              source={require('../assets/images/logo.png')} 
               style={styles.logo} 
             />
             <Text style={styles.appName}>SocialEase</Text>
           </View>
           {isProfilesTab && (
             <Pressable onPress={onSearchPress} style={styles.searchButton}>
-              <Ionicons name="search" size={24} color="#666666" />
+              <Ionicons name="search" size={24} color="#FFFF" />
             </Pressable>
           )}
         </View>
