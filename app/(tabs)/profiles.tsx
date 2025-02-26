@@ -235,6 +235,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    backgroundColor: '#020e0e',
+    paddingHorizontal: 16,
+    zIndex: 2,
+  },
+  searchWrapper: {
+    marginTop: 10,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#072727',
+    borderRadius: 12,
+    padding: 10,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  searchIcon: {
+    color: '#437C79',
+  },
+  filterIcon: {
+    color: '#437C79',
+    marginLeft: 10,
+  },
+  content: {
+    flex: 1,
+    backgroundColor: '#020e0e',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

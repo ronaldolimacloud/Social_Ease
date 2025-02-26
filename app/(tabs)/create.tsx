@@ -13,6 +13,7 @@ export default function CreateScreen() {
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
+      locations={[0.5, 1]}
     >
       <Header 
         showSearch={false}

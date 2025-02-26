@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, ImageBackground, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 import { Amplify } from 'aws-amplify';
 import outputs from '../../amplify_outputs.json';
-import { signOut } from 'aws-amplify/auth';
 
 // Configure Amplify with the generated AWS resources
 // This connects our app to the backend services (Auth, API, etc.)
@@ -13,7 +12,6 @@ Amplify.configure(outputs);
  * This is shown after successful authentication
  */
 function HomeContent() {
-  const { signOut} = useAuthenticator();
   return (
     <View style={styles.container}>
       {/* Background image wrapper
@@ -38,10 +36,6 @@ function HomeContent() {
           <Text style={styles.subText}>
             AI-powered personalized insights to help you feel confident in any social situation.
           </Text>
-          <Pressable onPress={() => signOut()}
-                    style={styles.signOutButton}>
-                    <Text style={styles.signOutText}>Sign Out</Text>
-          </Pressable>
         </View>
       </ImageBackground>
     </View>
@@ -80,19 +74,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
-  signOutButton: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
-  },
-
-  signOutText: {
-    color: '#1A1A1A',
-    fontWeight: 'bold',
-  },
-  
   
   // Content container styling
   // Adds padding and positions content appropriately

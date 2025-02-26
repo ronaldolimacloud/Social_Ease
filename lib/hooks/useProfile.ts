@@ -1,51 +1,34 @@
 import { useState } from 'react';
 import { client } from '../amplify';
 import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage';
-
-interface ProfileInput {
-  firstName: string;
-  lastName: string;
-  description?: string;
-  bio?: string;
-  photoUrl?: string;
-  photoKey?: string;
-}
-
-interface InsightInput {
-  text: string;
-  timestamp: string;
-}
-
-interface GroupInput {
-  id: string;
-  name: string;
-  type: string;
-  description?: string;
-  memberCount?: number;
-}
-
-interface ProfileQueryOptions {
-  limit?: number;
-  nextToken?: string;
-  filter?: Record<string, any>;
-}
+import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
+import { handleError, clearError } from '../utils';
 
 export const useProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handlePhotoUpload = async (photoFile: string) => {
-    const key = `profiles/${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    await uploadData({
-      key,
-      data: photoFile,
-      options: {
-        contentType: 'image/jpeg',
-        accessLevel: 'private'
+    try {
+      const key = `profiles/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      await uploadData({
+        key,
+        data: photoFile,
+        options: {
+          contentType: 'image/jpeg',
+          accessLevel: 'private'
+        }
+      });
+      const { url } = await getUrl({ key });
+      return { url: url.toString(), key };
+    } catch (err) {
+      // Detailed error logging for photo upload errors
+      if (err instanceof Error) {
+        console.error(`Error uploading photo - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
       }
-    });
-    const { url } = await getUrl({ key });
-    return { url: url.toString(), key };
+      throw err;
+    }
   };
 
   const createProfile = async (
@@ -99,7 +82,13 @@ export const useProfile = () => {
 
       return profile;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while creating profile');
+      // More detailed error logging
+      if (err instanceof Error) {
+        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      }
+      
+      handleError(err, setError);
       throw err;
     } finally {
       setLoading(false);
@@ -144,7 +133,13 @@ export const useProfile = () => {
 
       return profile;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching profile');
+      // More detailed error logging
+      if (err instanceof Error) {
+        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      }
+      
+      handleError(err, setError);
       throw err;
     } finally {
       setLoading(false);
@@ -242,7 +237,13 @@ export const useProfile = () => {
 
       return profile;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while updating profile');
+      // More detailed error logging
+      if (err instanceof Error) {
+        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      }
+      
+      handleError(err, setError);
       throw err;
     } finally {
       setLoading(false);
@@ -292,7 +293,13 @@ export const useProfile = () => {
       
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while deleting profile');
+      // More detailed error logging
+      if (err instanceof Error) {
+        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      }
+      
+      handleError(err, setError);
       throw err;
     } finally {
       setLoading(false);
@@ -314,14 +321,18 @@ export const useProfile = () => {
 
       return result.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while listing profiles');
+      // More detailed error logging
+      if (err instanceof Error) {
+        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
+        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      }
+      
+      handleError(err, setError);
       throw err;
     } finally {
       setLoading(false);
     }
   };
-
-  const clearError = () => setError(null);
 
   return {
     createProfile,
@@ -331,6 +342,6 @@ export const useProfile = () => {
     listProfiles,
     loading,
     error,
-    clearError,
+    clearError: () => clearError(setError),
   };
 }; 
