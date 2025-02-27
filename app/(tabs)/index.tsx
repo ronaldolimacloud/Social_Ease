@@ -1,17 +1,13 @@
 import { View, Text, StyleSheet, ImageBackground } from 'react-native';
-import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
-import { Amplify } from 'aws-amplify';
-import outputs from '../../amplify_outputs.json';
-
-// Configure Amplify with the generated AWS resources
-// This connects our app to the backend services (Auth, API, etc.)
-Amplify.configure(outputs);
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
 /**
- * HomeContent component - Renders the main landing page content
- * This is shown after successful authentication
+ * Home screen component - Main landing page of the app
+ * Shows personalized welcome message and primary app features
  */
-function HomeContent() {
+export default function HomeScreen() {
+  const { user } = useAuthenticator();
+  
   return (
     <View style={styles.container}>
       {/* Background image wrapper
@@ -24,6 +20,11 @@ function HomeContent() {
       >
         {/* Content container with padding and layout */}
         <View style={styles.content}>
+          {/* Personalized greeting for the logged-in user */}
+          <Text style={styles.greeting}>
+            Hello, {user?.username ? user.username.split('@')[0] : 'there'}!
+          </Text>
+          
           {/* Main heading text - white color for emphasis */}
           <Text style={styles.mainText}>CONNECT</Text>
           
@@ -39,21 +40,6 @@ function HomeContent() {
         </View>
       </ImageBackground>
     </View>
-  );
-}
-
-/**
- * Index component - Main entry point for the home tab
- * Wraps content with Amplify's authentication provider and authenticator
- * This ensures users must be logged in to view the content
- */
-export default function Index() {
-  return (
-    <Authenticator.Provider>
-      <Authenticator>
-        <HomeContent />
-      </Authenticator>
-    </Authenticator.Provider>
   );
 }
 
@@ -81,6 +67,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     paddingTop: 60, // Extra padding at top for status bar
+  },
+  
+  // Greeting text style
+  greeting: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 20,
   },
   
   // Main heading style - white text

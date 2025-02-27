@@ -1,13 +1,12 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
- * SettingsContent component - Renders the actual settings page content
- * This is shown after successful authentication
+ * Settings screen component - Shows user settings and account options
  */
-function SettingsContent() {
+export default function SettingsScreen() {
   const { user, signOut } = useAuthenticator();
   const [loading, setLoading] = useState(false);
 
@@ -80,21 +79,6 @@ function SettingsContent() {
         </Pressable>
       </ScrollView>
     </View>
-  );
-}
-
-/**
- * Settings component - Main entry point for the settings tab
- * Wraps content with Amplify's authentication provider and authenticator
- * This ensures users must be logged in to view the content
- */
-export default function Settings() {
-  return (
-    <Authenticator.Provider>
-      <Authenticator>
-        <SettingsContent />
-      </Authenticator>
-    </Authenticator.Provider>
   );
 }
 
