@@ -1,17 +1,23 @@
 import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput } from 'react-native';
-import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 
+/**
+ * Interface defining the structure of an insight/note about a person
+ */
 type Insight = {
   id: string;
   text: string;
   timestamp: string;
 };
 
+/**
+ * Interface defining the structure of a user profile
+ */
 type Profile = {
   id: string;
   firstName: string;
@@ -27,13 +33,23 @@ type Profile = {
   }>;
 };
 
+/**
+ * ProfileScreen component - displays a user's profile information
+ * and allows interaction with that profile (adding insights, etc.)
+ */
 export default function ProfileScreen() {
+  // Extract the profile ID from the route parameters
   const { id } = useLocalSearchParams();
+  // State for storing the profile data
   const [profile, setProfile] = useState<Profile | null>(null);
+  // State for managing the new insight input field
   const [newInsight, setNewInsight] = useState('');
+  // Custom hook for profile data operations
   const { getProfile, updateProfile } = useProfile();
 
-  // Function to fetch profile data
+  /**
+   * Fetches profile data from the backend
+   */
   const fetchProfile = async () => {
     try {
       if (typeof id === 'string') {
@@ -46,12 +62,12 @@ export default function ProfileScreen() {
     }
   };
 
-  // Initial fetch on mount
+  // Fetch profile data when component mounts or ID changes
   useEffect(() => {
     fetchProfile();
   }, [id]);
 
-  // Refresh data when screen comes into focus
+  // Refresh profile data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       console.log("Profile screen is focused, refreshing data");
@@ -60,9 +76,12 @@ export default function ProfileScreen() {
     }, [id])
   );
 
+  /**
+   * Handles profile photo selection and update
+   */
   const handleEditPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -74,6 +93,9 @@ export default function ProfileScreen() {
     }
   };
 
+  /**
+   * Handles adding a new insight/note about the person
+   */
   const handleAddInsight = async () => {
     if (!profile || !newInsight.trim()) return;
 
@@ -107,6 +129,7 @@ export default function ProfileScreen() {
         [] // No groups to remove
       );
       
+      // Update local state
       setProfile(updatedProfile);
       setNewInsight('');
     } catch (error) {
@@ -114,6 +137,10 @@ export default function ProfileScreen() {
     }
   };
 
+  /**
+   * Handles removing an insight/note
+   * @param insightId - ID of the insight to remove
+   */
   const handleRemoveInsight = async (insightId: string) => {
     if (!profile) return;
 
@@ -141,12 +168,14 @@ export default function ProfileScreen() {
         [] // No groups to remove
       );
       
+      // Update local state
       setProfile(updatedProfile);
     } catch (error) {
       console.error('Error removing insight:', error);
     }
   };
 
+  // Show loading indicator while fetching profile data
   if (!profile) {
     return (
       <View style={styles.container}>
@@ -159,22 +188,36 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: '',
-          headerRight: () => (
-            <Pressable onPress={() => router.push(`/profile/edit?id=${profile.id}`)} style={{ marginRight: 16 }}>
-              <Ionicons name="create-outline" size={24} color="#437C79" />
+          title: `${profile.firstName} ${profile.lastName}`,
+          headerLeft: () => (
+            <Pressable 
+              onPress={() => router.back()}
+              style={{ 
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </Pressable>
           ),
-          headerStyle: {
-            backgroundColor: 'transparent',
-          },
-          headerTransparent: true,
+          headerRight: () => (
+            <Pressable 
+              onPress={() => router.push(`/profile/edit?id=${profile.id}`)}
+              style={{ 
+                marginRight: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons name="pencil" size={24} color="#FFFFFF" />
+            </Pressable>
+          ),
         }}
       />
       <ScrollView style={styles.container} bounces={false}>
+        {/* Profile Header Section */}
         <View style={styles.header}>
           <View style={styles.headerBackground} />
+          {/* Profile Photo with Edit Button */}
           <Pressable onPress={handleEditPhoto} style={styles.photoContainer}>
             <Image 
               source={{ 
@@ -188,8 +231,10 @@ export default function ProfileScreen() {
               <Ionicons name="camera" size={20} color="#FFFFFF" />
             </View>
           </Pressable>
+          {/* Profile Name and Description */}
           <Text style={styles.name}>{`${profile.firstName} ${profile.lastName}`}</Text>
           <Text style={styles.description}>{profile.description}</Text>
+          {/* Group membership tags */}
           <View style={styles.groupTags}>
             {profile.groups.map((group, index) => (
               <Text key={group.id} style={styles.groupTag}>
@@ -200,7 +245,9 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Main Content Section */}
         <View style={styles.content}>
+          {/* About/Bio Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="information-circle" size={24} color="#437C79" />
@@ -209,7 +256,9 @@ export default function ProfileScreen() {
             <Text style={styles.bio}>{profile.bio}</Text>
           </View>
 
+          {/* Insights/Notes Section */}
           <View style={styles.section}>
+            {/* Input for adding new insights */}
             <View style={styles.insightInput}>
               <TextInput
                 style={styles.insightTextInput}
@@ -228,6 +277,7 @@ export default function ProfileScreen() {
                 <Ionicons name="add" size={24} color="#FFFFFF" />
               </Pressable>
             </View>
+            {/* List of existing insights */}
             {profile.insights.length > 0 ? (
               <View style={styles.insightsList}>
                 {profile.insights.map(insight => (
@@ -251,6 +301,10 @@ export default function ProfileScreen() {
   );
 }
 
+/**
+ * StyleSheet for the ProfileScreen component
+ * Uses a teal/turquoise color scheme with white accents
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -262,6 +316,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 32,
   },
+  // Header styles
   header: {
     alignItems: 'center',
     paddingTop: 60,
@@ -277,6 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#437C79',
     opacity: 0.1,
   },
+  // Profile photo styles
   photoContainer: {
     position: 'relative',
     marginBottom: 16,
@@ -301,6 +357,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
+  // Profile text styles
   name: {
     fontSize: 24,
     fontWeight: '600',
@@ -312,6 +369,7 @@ const styles = StyleSheet.create({
     color: '#C5EEED',
     marginBottom: 8,
   },
+  // Group tag styles
   groupTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -321,6 +379,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A6DDDC',
   },
+  // Content section styles
   content: {
     padding: 16,
   },
@@ -351,6 +410,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#437C79',
   },
+  // Insight input styles
   insightInput: {
     flexDirection: 'row',
     gap: 8,
@@ -378,6 +438,7 @@ const styles = StyleSheet.create({
   addInsightButtonDisabled: {
     backgroundColor: '#A6DDDC',
   },
+  // Insight list styles
   insightsList: {
     gap: 8,
   },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
@@ -156,6 +156,15 @@ export default function ProfilesScreen() {
     console.log(`${componentName} Layout:`, {x, y, width, height});
   };
 
+  // Navigation handlers
+  const handleNavigateToCreateProfile = () => {
+    router.push('/profile/new');
+  };
+
+  const handleNavigateToCreateGroup = () => {
+    router.push('/group/new');
+  };
+
   // Main render function
   return (
     <LinearGradient
@@ -176,6 +185,30 @@ export default function ProfilesScreen() {
         }}
         isProfilesTab={true}
       />
+
+      {/* Action cards for creating profile and group */}
+      <View style={styles.actionCardsContainer}>
+        <Pressable 
+          style={styles.actionCard} 
+          onPress={handleNavigateToCreateProfile}
+        >
+          <View style={styles.actionCardIcon}>
+            <Ionicons name="person-add" size={24} color="#437C79" />
+          </View>
+          <Text style={styles.actionCardText}>Create Profile</Text>
+        </Pressable>
+        
+        <Pressable 
+          style={styles.actionCard}
+          onPress={handleNavigateToCreateGroup}
+        >
+          <View style={styles.actionCardIcon}>
+            <Ionicons name="people" size={24} color="#437C79" />
+          </View>
+          <Text style={styles.actionCardText}>Create Group</Text>
+        </Pressable>
+      </View>
+
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -234,6 +267,35 @@ export default function ProfilesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // Add new styles for action cards
+  actionCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionCard: {
+    backgroundColor: '#C5EEED',
+    borderRadius: 12,
+    padding: 12,
+    width: '48%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionCardIcon: {
+    marginRight: 8,
+  },
+  actionCardText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#437C79',
   },
   headerContainer: {
     backgroundColor: '#020e0e',

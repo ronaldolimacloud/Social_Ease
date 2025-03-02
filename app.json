@@ -30,6 +30,9 @@
       "eas": {
         "projectId": "b7332464-7c88-4636-887e-00ae0092edde"
       }
+    },
+    "android": {
+      "package": "com.ronaldograxa.socialease"
     }
   }
 }

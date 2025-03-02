@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, findNodeHandle, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
@@ -176,224 +176,242 @@ export default function NewProfileScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollViewContent}
-        >
-          <View style={styles.photoContainer}>
-            <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
-              {photoUri ? (
-                <Image 
-                  source={{ 
-                    uri: photoUri && photoUri.trim() !== '' 
-                      ? photoUri 
-                      : DEFAULT_PHOTO
-                  }} 
-                  style={styles.photo} 
-                />
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <Ionicons name="camera" size={32} color="#666666" />
-                  <Text style={styles.photoPlaceholderText}>Add Photo</Text>
-                </View>
-              )}
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Create Profile',
+          headerLeft: () => (
+            <Pressable 
+              onPress={() => router.back()}
+              style={{ 
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </Pressable>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>First Name<Text style={styles.required}>*</Text></Text>
-              <TextInput
-                style={[styles.input, !firstName.trim() && styles.inputError]}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Enter first name"
-                onFocus={handleInputFocus}
-              />
+          ),
+        }}
+      />
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollViewContent}
+          >
+            <View style={styles.photoContainer}>
+              <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
+                {photoUri ? (
+                  <Image 
+                    source={{ 
+                      uri: photoUri && photoUri.trim() !== '' 
+                        ? photoUri 
+                        : DEFAULT_PHOTO
+                    }} 
+                    style={styles.photo} 
+                  />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Ionicons name="camera" size={32} color="#666666" />
+                    <Text style={styles.photoPlaceholderText}>Add Photo</Text>
+                  </View>
+                )}
+              </Pressable>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Last Name</Text>
-              <TextInput
-                style={styles.input}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Enter last name"
-                onFocus={handleInputFocus}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Title/Role</Text>
-              <TextInput
-                style={styles.input}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="e.g. Software Engineer, Student, Artist"
-                onFocus={handleInputFocus}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Bio</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Tell us about yourself..."
-                multiline
-                numberOfLines={4}
-                onFocus={handleInputFocus}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Insights</Text>
-              <View style={styles.insightInput}>
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>First Name<Text style={styles.required}>*</Text></Text>
                 <TextInput
-                  style={styles.insightTextInput}
-                  value={newInsight}
-                  onChangeText={setNewInsight}
-                  placeholder="Add a quick note about this person..."
-                  multiline
+                  style={[styles.input, !firstName.trim() && styles.inputError]}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Enter first name"
                   onFocus={handleInputFocus}
                 />
-                <Pressable
-                  onPress={handleAddInsight}
-                  style={[
-                    styles.addInsightButton,
-                    !newInsight.trim() && styles.addInsightButtonDisabled
-                  ]}>
-                  <Ionicons name="add" size={24} color="#FFFFFF" />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Enter last name"
+                  onFocus={handleInputFocus}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Title/Role</Text>
+                <TextInput
+                  style={styles.input}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="e.g. Software Engineer, Student, Artist"
+                  onFocus={handleInputFocus}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Bio</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Tell us about yourself..."
+                  multiline
+                  numberOfLines={4}
+                  onFocus={handleInputFocus}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Insights</Text>
+                <View style={styles.insightInput}>
+                  <TextInput
+                    style={styles.insightTextInput}
+                    value={newInsight}
+                    onChangeText={setNewInsight}
+                    placeholder="Add a quick note about this person..."
+                    multiline
+                    onFocus={handleInputFocus}
+                  />
+                  <Pressable
+                    onPress={handleAddInsight}
+                    style={[
+                      styles.addInsightButton,
+                      !newInsight.trim() && styles.addInsightButtonDisabled
+                    ]}>
+                    <Ionicons name="add" size={24} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+                {insights.length > 0 && (
+                  <View style={styles.insightsList}>
+                    {insights.map(insight => (
+                      <View key={insight.id} style={styles.insightItem}>
+                        <Text style={styles.insightText}>{insight.text}</Text>
+                        <Pressable
+                          onPress={() => handleRemoveInsight(insight.id)}
+                          style={styles.removeInsight}>
+                          <Ionicons name="close-circle" size={20} color="#666666" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Groups</Text>
+                <Pressable 
+                  style={styles.groupSelector}
+                  onPress={() => setShowGroupModal(true)}>
+                  <Text style={styles.groupSelectorText}>
+                    {selectedGroups.length > 0 
+                      ? `${selectedGroups.length} group${selectedGroups.length === 1 ? '' : 's'} selected`
+                      : 'Select groups'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#666666" />
+                </Pressable>
+                {selectedGroups.length > 0 && (
+                  <View style={styles.selectedGroups}>
+                    {selectedGroups.map(group => (
+                      <View key={group.id} style={styles.selectedGroup}>
+                        <Text style={styles.selectedGroupText}>{group.name}</Text>
+                        <Pressable
+                          onPress={() => toggleGroup(group)}
+                          style={styles.removeGroup}>
+                          <Ionicons name="close-circle" size={20} color="#666666" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={[styles.saveButton, !isFormValid && styles.saveButtonDisabled]}
+                onPress={handleSave}
+                disabled={!isFormValid}>
+                <Text style={[styles.saveButtonText, !isFormValid && styles.saveButtonTextDisabled]}>
+                  Create Profile
+                </Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+
+        <Modal
+          visible={showGroupModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowGroupModal(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Groups</Text>
+                <Pressable 
+                  onPress={() => setShowGroupModal(false)}
+                  style={styles.modalClose}>
+                  <Ionicons name="close" size={24} color="#666666" />
                 </Pressable>
               </View>
-              {insights.length > 0 && (
-                <View style={styles.insightsList}>
-                  {insights.map(insight => (
-                    <View key={insight.id} style={styles.insightItem}>
-                      <Text style={styles.insightText}>{insight.text}</Text>
-                      <Pressable
-                        onPress={() => handleRemoveInsight(insight.id)}
-                        style={styles.removeInsight}>
-                        <Ionicons name="close-circle" size={20} color="#666666" />
-                      </Pressable>
-                    </View>
-                  ))}
+
+              {loadingGroups ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loadingText}>Loading groups...</Text>
                 </View>
-              )}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Groups</Text>
-              <Pressable 
-                style={styles.groupSelector}
-                onPress={() => setShowGroupModal(true)}>
-                <Text style={styles.groupSelectorText}>
-                  {selectedGroups.length > 0 
-                    ? `${selectedGroups.length} group${selectedGroups.length === 1 ? '' : 's'} selected`
-                    : 'Select groups'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#666666" />
-              </Pressable>
-              {selectedGroups.length > 0 && (
-                <View style={styles.selectedGroups}>
-                  {selectedGroups.map(group => (
-                    <View key={group.id} style={styles.selectedGroup}>
-                      <Text style={styles.selectedGroupText}>{group.name}</Text>
-                      <Pressable
-                        onPress={() => toggleGroup(group)}
-                        style={styles.removeGroup}>
-                        <Ionicons name="close-circle" size={20} color="#666666" />
-                      </Pressable>
-                    </View>
-                  ))}
+              ) : availableGroups.length === 0 ? (
+                <View style={styles.emptyGroupsContainer}>
+                  <Ionicons name="people" size={48} color="#CCCCCC" />
+                  <Text style={styles.emptyGroupsText}>No groups available</Text>
+                  <Text style={styles.emptyGroupsSubText}>Create groups in the Groups tab</Text>
                 </View>
+              ) : (
+                <ScrollView style={styles.groupsList}>
+                  {availableGroups.map(group => {
+                    const isSelected = selectedGroups.some(g => g.id === group.id);
+                    return (
+                      <Pressable
+                        key={group.id}
+                        style={[styles.groupItem, isSelected && styles.groupItemSelected]}
+                        onPress={() => toggleGroup(group)}>
+                        <View style={styles.groupIcon}>
+                          <Ionicons name="people" size={24} color="#007AFF" />
+                        </View>
+                        <View style={styles.groupInfo}>
+                          <Text style={styles.groupName}>{group.name}</Text>
+                        </View>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               )}
-            </View>
-          </View>
 
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={[styles.saveButton, !isFormValid && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={!isFormValid}>
-              <Text style={[styles.saveButtonText, !isFormValid && styles.saveButtonTextDisabled]}>
-                Create Profile
-              </Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-
-      <Modal
-        visible={showGroupModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowGroupModal(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Groups</Text>
               <Pressable 
-                onPress={() => setShowGroupModal(false)}
-                style={styles.modalClose}>
-                <Ionicons name="close" size={24} color="#666666" />
+                style={styles.modalDone}
+                onPress={() => setShowGroupModal(false)}>
+                <Text style={styles.modalDoneText}>Done</Text>
               </Pressable>
             </View>
-
-            {loadingGroups ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Loading groups...</Text>
-              </View>
-            ) : availableGroups.length === 0 ? (
-              <View style={styles.emptyGroupsContainer}>
-                <Ionicons name="people" size={48} color="#CCCCCC" />
-                <Text style={styles.emptyGroupsText}>No groups available</Text>
-                <Text style={styles.emptyGroupsSubText}>Create groups in the Groups tab</Text>
-              </View>
-            ) : (
-              <ScrollView style={styles.groupsList}>
-                {availableGroups.map(group => {
-                  const isSelected = selectedGroups.some(g => g.id === group.id);
-                  return (
-                    <Pressable
-                      key={group.id}
-                      style={[styles.groupItem, isSelected && styles.groupItemSelected]}
-                      onPress={() => toggleGroup(group)}>
-                      <View style={styles.groupIcon}>
-                        <Ionicons name="people" size={24} color="#007AFF" />
-                      </View>
-                      <View style={styles.groupInfo}>
-                        <Text style={styles.groupName}>{group.name}</Text>
-                      </View>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
-
-            <Pressable 
-              style={styles.modalDone}
-              onPress={() => setShowGroupModal(false)}>
-              <Text style={styles.modalDoneText}>Done</Text>
-            </Pressable>
           </View>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
+        </Modal>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
