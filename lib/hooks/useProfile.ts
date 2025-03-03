@@ -15,8 +15,7 @@ export const useProfile = () => {
         key,
         data: photoFile,
         options: {
-          contentType: 'image/jpeg',
-          accessLevel: 'private'
+          contentType: 'image/jpeg'
         }
       });
       const { url } = await getUrl({ key });
