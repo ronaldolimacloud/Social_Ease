@@ -186,20 +186,31 @@ export default function ProfileScreen() {
 
   return (
     <>
-      {/* Stack.Screen - Configure the navigation header */}
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: '',
+          title: profile ? `${profile.firstName} ${profile.lastName}` : 'Profile',
+          headerLeft: () => (
+            <Pressable 
+              onPress={() => router.back()}
+              style={{ 
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </Pressable>
+          ),
           headerRight: () => (
-            <Pressable onPress={() => router.push(`/profile/edit?id=${profile.id}`)} style={{ marginRight: 16 }}>
-              <Ionicons name="create-outline" size={24} color="#437C79" />
+            <Pressable 
+              onPress={() => router.push(`/profile/edit?id=${profile.id}`)} 
+              style={{ marginRight: 16 }}
+            >
+              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
             </Pressable>
           ),
           headerStyle: {
-            backgroundColor: '#90cac7',
+            backgroundColor: '#437C79',
           },
-          headerTransparent: false,
         }}
       />
       <ScrollView style={styles.container} bounces={false}>

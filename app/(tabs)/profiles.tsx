@@ -7,9 +7,8 @@ import Header from '../../components/Header';
 import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
-// Import our new modal components
+// Import our profile modal component
 import ProfileModal from '../../components/ProfileModal';
-import GroupModal from '../../components/GroupModal';
 
 // Updated function to use actual groups from the database
 const useGroups = () => {
@@ -62,7 +61,6 @@ export default function ProfilesScreen() {
   
   // Add state for modals
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showGroupModal, setShowGroupModal] = useState(false);
   
   // Add debug logging to see what profiles data contains
   useEffect(() => {
@@ -206,24 +204,6 @@ export default function ProfilesScreen() {
     refetch();
   };
 
-  // Function to handle showing the group modal
-  const handleOpenGroupModal = () => {
-    setShowGroupModal(true);
-  };
-
-  // Function to handle closing the group modal
-  const handleCloseGroupModal = () => {
-    console.log('Group modal closed, triggering refresh');
-    // First update the UI state
-    setShowGroupModal(false);
-    
-    // Reset the selected group to 'All' to ensure we see all groups
-    setSelectedGroup('All');
-    
-    // Also force a refresh of the profiles with groups
-    refetch();
-  };
-
   // Function to handle the deletion of a profile
   const handleDeleteProfile = (profileId: string) => {
     // Display a confirmation dialog to prevent accidental deletions
@@ -286,7 +266,7 @@ export default function ProfilesScreen() {
   return (
     // LinearGradient provides a smooth color transition for the background
     <LinearGradient
-      colors={['#90cac7', '#020e0e']}
+      colors={['#061a1a', '#020e0e']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
@@ -305,7 +285,7 @@ export default function ProfilesScreen() {
         isProfilesTab={true}
       />
 
-      {/* Container for action cards (Create Profile and Create Group) */}
+      {/* Container for action cards */}
       <View style={styles.actionCardsContainer}>
         {/* Touchable card for creating a new profile */}
         <Pressable 
@@ -313,7 +293,7 @@ export default function ProfilesScreen() {
           style={styles.actionCardBase}
         >
           <LinearGradient
-            colors={['#C5EEED', '#69aeaa']}
+            colors={['#092121', '#153434']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.actionCard}
@@ -328,11 +308,10 @@ export default function ProfilesScreen() {
         
         {/* Touchable card for creating a new group */}
         <Pressable 
-          onPress={handleOpenGroupModal}
           style={styles.actionCardBase}
         >
           <LinearGradient
-            colors={['#C5EEED', '#69aeaa']}
+            colors={['#092121', '#153434']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.actionCard}
@@ -411,12 +390,6 @@ export default function ProfilesScreen() {
       <ProfileModal 
         visible={showProfileModal} 
         onClose={handleCloseProfileModal} 
-      />
-      
-      {/* Group modal */}
-      <GroupModal 
-        visible={showGroupModal} 
-        onClose={handleCloseGroupModal} 
       />
     </LinearGradient>
   );
@@ -532,7 +505,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 13, // Text size
     fontWeight: '500', // Medium font weight
-    color: '#020e0e', // Dark color for inactive tabs
+    color: '#85c3c0', // Dark color for inactive tabs
   },
   tabTextActive: {
     color: '#FFFFFF', // White color for active tab
@@ -549,7 +522,7 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     flexDirection: 'row', // Arrange content horizontally
-    backgroundColor: '#90cac7', // Light teal background
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', // Light teal background at 50% opacity
     borderRadius: 12, // Rounded corners
     padding: 12, // Inner spacing
     shadowColor: '#000', // Black shadow
