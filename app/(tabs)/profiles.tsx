@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
 import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
+import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
 
 // Updated function to use actual groups from the database
@@ -46,11 +47,15 @@ export default function ProfilesScreen() {
   const { profiles, loading: profilesLoading, error, refetch } = useProfiles();
   // Use the new groups hook
   const { groupNames, loading: groupsLoading } = useGroups();
+  // Add useProfile hook to get access to deleteProfile
+  const { deleteProfile } = useProfile();
   
   // State management using React hooks
   const [selectedGroup, setSelectedGroup] = useState('All'); // Currently selected group filter
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Add state for syncing profiles (similar to groups)
+  const [syncingProfiles, setSyncingProfiles] = useState<Record<string, boolean>>({});
   
   // Filter profiles based on selected group and search query
   const filteredProfiles = profiles.filter(profile => {
@@ -85,69 +90,84 @@ export default function ProfilesScreen() {
 
   // Component to render individual profile cards
   const renderProfile = ({ item }: { item: Profile }) => (
-    <Link href={`/profile/${item.id}`} asChild>
-      <Pressable style={styles.profileCard}>
-        <Image 
-          source={{ 
-            uri: (item.photoUrl && item.photoUrl.trim() !== '') 
-              ? item.photoUrl 
-              : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' 
-          }} 
-          style={styles.profileImage} 
-        />
-        <View style={styles.profileInfo}>
-          <Text style={styles.name}>{`${item.firstName} ${item.lastName}`}</Text>
-          {item.description && <Text style={styles.description}>{item.description}</Text>}
-          {item.bio && <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>}
-          {/* Group tags section */}
-          {item.groups && item.groups.length > 0 && (
-            <View style={styles.groupTags}>
-              {item.groups.map(group => (
-                <View 
-                  key={group.id} 
-                  style={[
-                    styles.groupTag,
-                    { backgroundColor: 
-                      group.type === 'work' ? '#C5EEED' : 
-                      group.type === 'school' ? '#A6DDDC' : 
-                      group.type === 'social' ? '#77B8B6' : '#437C79' 
-                    }
-                  ]}>
-                  <Ionicons 
-                    name={
-                      group.type === 'work' ? 'business' : 
-                      group.type === 'school' ? 'school' : 
-                      group.type === 'social' ? 'people' : 'grid'
-                    } 
-                    size={12} 
-                    color={
-                      group.type === 'work' ? '#437C79' : 
-                      group.type === 'school' ? '#437C79' : 
-                      group.type === 'social' ? '#437C79' : '#082322'
-                    }
-                    style={styles.groupTagIcon}
-                  />
-                  <Text 
+    <View style={styles.profileCard}>
+      <Link href={`/profile/${item.id}`} asChild>
+        <Pressable style={styles.profileCardContent}>
+          <Image 
+            source={{ 
+              uri: (item.photoUrl && item.photoUrl.trim() !== '') 
+                ? item.photoUrl 
+                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' 
+            }} 
+            style={styles.profileImage} 
+          />
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>{`${item.firstName} ${item.lastName}`}</Text>
+            {item.description && <Text style={styles.description}>{item.description}</Text>}
+            {item.bio && <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>}
+            {/* Group tags section */}
+            {item.groups && item.groups.length > 0 && (
+              <View style={styles.groupTags}>
+                {item.groups.map(group => (
+                  <View 
+                    key={group.id} 
                     style={[
-                      styles.groupTagText,
-                      { color: 
+                      styles.groupTag,
+                      { backgroundColor: 
+                        group.type === 'work' ? '#C5EEED' : 
+                        group.type === 'school' ? '#A6DDDC' : 
+                        group.type === 'social' ? '#77B8B6' : '#437C79' 
+                      }
+                    ]}>
+                    <Ionicons 
+                      name={
+                        group.type === 'work' ? 'business' : 
+                        group.type === 'school' ? 'school' : 
+                        group.type === 'social' ? 'people' : 'grid'
+                      } 
+                      size={12} 
+                      color={
                         group.type === 'work' ? '#437C79' : 
                         group.type === 'school' ? '#437C79' : 
-                        group.type === 'social' ? '#437C79' : '#082322' 
+                        group.type === 'social' ? '#437C79' : '#082322'
                       }
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {group.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
+                      style={styles.groupTagIcon}
+                    />
+                    <Text 
+                      style={[
+                        styles.groupTagText,
+                        { color: 
+                          group.type === 'work' ? '#437C79' : 
+                          group.type === 'school' ? '#437C79' : 
+                          group.type === 'social' ? '#437C79' : '#082322' 
+                        }
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {group.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {/* Show syncing indicator if this profile is being deleted */}
+            {syncingProfiles[item.id] && (
+              <View style={styles.syncIndicator}>
+                <ActivityIndicator size="small" color="#437C79" />
+                <Text style={styles.syncText}>Syncing...</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </Link>
+      <Pressable 
+        style={styles.deleteButton}
+        onPress={() => handleDeleteProfile(item.id)}
+      >
+        <Ionicons name="trash-outline" size={20} color="#437C79" />
       </Pressable>
-    </Link>
+    </View>
   );
 
   // Utility function for debugging layout issues
@@ -163,6 +183,55 @@ export default function ProfilesScreen() {
 
   const handleNavigateToCreateGroup = () => {
     router.push('/group/new');
+  };
+
+  // Add handler for profile deletion
+  const handleDeleteProfile = (profileId: string) => {
+    Alert.alert(
+      "Delete Profile",
+      "Are you sure you want to delete this profile? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Mark this profile as syncing
+              setSyncingProfiles(prev => ({ ...prev, [profileId]: true }));
+              
+              // Delete from database
+              await deleteProfile(profileId);
+              
+              // Remove from syncing state
+              setSyncingProfiles(prev => {
+                const newState = { ...prev };
+                delete newState[profileId];
+                return newState;
+              });
+            } catch (error) {
+              console.error('Error deleting profile:', error);
+              
+              // Remove from syncing state
+              setSyncingProfiles(prev => {
+                const newState = { ...prev };
+                delete newState[profileId];
+                return newState;
+              });
+              
+              Alert.alert(
+                "Error",
+                "Failed to delete profile. Please try again.",
+                [{ text: "OK" }]
+              );
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Main render function
@@ -268,21 +337,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Add new styles for action cards
   actionCardsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   actionCard: {
-    backgroundColor: '#C5EEED',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     width: '48%',
-    alignItems: 'center',
-    justifyContent: 'center',
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -290,11 +358,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   actionCardIcon: {
-    marginRight: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(198, 234, 233, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   actionCardText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     color: '#437C79',
   },
   headerContainer: {
@@ -337,34 +411,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 24,
   },
   errorText: {
-    color: '#FFFFFF',
     fontSize: 16,
-    marginBottom: 12,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   retryButton: {
     backgroundColor: '#437C79',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   tabsContainer: {
-    borderBottomColor: '#020e0e',
-    paddingVertical: 10,
-    height: 45,
-    zIndex: 1,
+    marginVertical: 8,
   },
   tabs: {
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    gap: 12,
+    paddingLeft: 16,
+    paddingBottom: 8,
+    gap: 16,
   },
   tabText: {
     fontSize: 13,
@@ -394,6 +466,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     marginBottom: 12,
+    alignItems: 'center',
+  },
+  profileCardContent: {
+    flex: 1,
+    flexDirection: 'row',
   },
   profileImage: {
     width: 80,
@@ -457,5 +534,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#FFFFFF',
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 4,
+  },
+  syncIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  syncText: {
+    fontSize: 12,
+    color: '#437C79',
+    marginLeft: 4,
   },
 });

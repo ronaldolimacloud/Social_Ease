@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput } from 'react-native';
-import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
@@ -186,31 +186,20 @@ export default function ProfileScreen() {
 
   return (
     <>
+      {/* Stack.Screen - Configure the navigation header */}
       <Stack.Screen
         options={{
-          title: `${profile.firstName} ${profile.lastName}`,
-          headerLeft: () => (
-            <Pressable 
-              onPress={() => router.back()}
-              style={{ 
-                marginLeft: 16,
-                padding: 8,
-              }}
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </Pressable>
-          ),
+          headerShown: true,
+          title: '',
           headerRight: () => (
-            <Pressable 
-              onPress={() => router.push(`/profile/edit?id=${profile.id}`)}
-              style={{ 
-                marginRight: 16,
-                padding: 8,
-              }}
-            >
-              <Ionicons name="pencil" size={24} color="#FFFFFF" />
+            <Pressable onPress={() => router.push(`/profile/edit?id=${profile.id}`)} style={{ marginRight: 16 }}>
+              <Ionicons name="create-outline" size={24} color="#437C79" />
             </Pressable>
           ),
+          headerStyle: {
+            backgroundColor: '#90cac7',
+          },
+          headerTransparent: false,
         }}
       />
       <ScrollView style={styles.container} bounces={false}>
