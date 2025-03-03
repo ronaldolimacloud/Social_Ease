@@ -7,6 +7,9 @@ import Header from '../../components/Header';
 import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
+// Import our new modal components
+import ProfileModal from '../../components/ProfileModal';
+import GroupModal from '../../components/GroupModal';
 
 // Updated function to use actual groups from the database
 const useGroups = () => {
@@ -56,6 +59,15 @@ export default function ProfilesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   // Add state for syncing profiles (similar to groups)
   const [syncingProfiles, setSyncingProfiles] = useState<Record<string, boolean>>({});
+  
+  // Add state for modals
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  
+  // Add debug logging to see what profiles data contains
+  useEffect(() => {
+    console.log(`Profiles updated: ${profiles.length} profiles available`);
+  }, [profiles]);
   
   // Filter profiles based on selected group and search query
   const filteredProfiles = profiles.filter(profile => {
@@ -172,60 +184,96 @@ export default function ProfilesScreen() {
 
   // Utility function for debugging layout issues
   const logLayout = (componentName: string) => (event: LayoutChangeEvent) => {
+    // Extract layout measurements (position and dimensions) from the event
     const {x, y, width, height} = event.nativeEvent.layout;
+    // Print those measurements to the console for debugging purposes
     console.log(`${componentName} Layout:`, {x, y, width, height});
   };
 
   // Navigation handlers
-  const handleNavigateToCreateProfile = () => {
-    router.push('/profile/new');
+  // Function to handle showing the profile modal
+  const handleOpenProfileModal = () => {
+    setShowProfileModal(true);
   };
 
-  const handleNavigateToCreateGroup = () => {
-    router.push('/group/new');
+  // Function to handle closing the profile modal
+  const handleCloseProfileModal = () => {
+    console.log('Profile modal closed, triggering refresh');
+    // First update the UI state
+    setShowProfileModal(false);
+    
+    // Force an immediate refresh of the profiles data
+    refetch();
   };
 
-  // Add handler for profile deletion
+  // Function to handle showing the group modal
+  const handleOpenGroupModal = () => {
+    setShowGroupModal(true);
+  };
+
+  // Function to handle closing the group modal
+  const handleCloseGroupModal = () => {
+    console.log('Group modal closed, triggering refresh');
+    // First update the UI state
+    setShowGroupModal(false);
+    
+    // Reset the selected group to 'All' to ensure we see all groups
+    setSelectedGroup('All');
+    
+    // Also force a refresh of the profiles with groups
+    refetch();
+  };
+
+  // Function to handle the deletion of a profile
   const handleDeleteProfile = (profileId: string) => {
+    // Display a confirmation dialog to prevent accidental deletions
     Alert.alert(
-      "Delete Profile",
-      "Are you sure you want to delete this profile? This action cannot be undone.",
+      "Delete Profile", // Title of the alert dialog
+      "Are you sure you want to delete this profile? This action cannot be undone.", // Explanatory message
       [
         {
-          text: "Cancel",
-          style: "cancel"
+          text: "Cancel", // Text for the cancel button
+          style: "cancel" // Style applied to show it's a cancellation action
         },
         {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
+          text: "Delete", // Text for the delete confirmation button
+          style: "destructive", // Style applied to indicate destructive action (typically red)
+          onPress: async () => { // Function executed when the delete button is pressed
             try {
-              // Mark this profile as syncing
+              // Update state to show this profile is currently being synchronized/processed
               setSyncingProfiles(prev => ({ ...prev, [profileId]: true }));
               
-              // Delete from database
+              // Delete the profile from the database using the deleteProfile function
               await deleteProfile(profileId);
               
-              // Remove from syncing state
+              // Remove this profile from the syncing state after successful deletion
               setSyncingProfiles(prev => {
+                // Create a copy of the previous state to avoid direct mutation
                 const newState = { ...prev };
+                // Remove this specific profile from the syncing state
                 delete newState[profileId];
+                // Return the updated state without the deleted profile
                 return newState;
               });
             } catch (error) {
+              // Log any errors that occur during deletion to the console
               console.error('Error deleting profile:', error);
               
-              // Remove from syncing state
+              // Even if deletion fails, remove this profile from syncing state
               setSyncingProfiles(prev => {
+                // Create a copy of the previous state to avoid direct mutation
                 const newState = { ...prev };
+                // Remove this specific profile from the syncing state
                 delete newState[profileId];
+                // Return the updated state
                 return newState;
               });
               
+              // Show an error message to the user if deletion fails
               Alert.alert(
-                "Error",
-                "Failed to delete profile. Please try again.",
-                [{ text: "OK" }]
+                "Error", // Title of the error alert
+                "Failed to delete profile. Please try again.", // Explanatory error message
+                [{ text: "OK" }] // Single button to dismiss the alert
               );
             }
           }
@@ -234,8 +282,9 @@ export default function ProfilesScreen() {
     );
   };
 
-  // Main render function
+  // Main render function for the entire component
   return (
+    // LinearGradient provides a smooth color transition for the background
     <LinearGradient
       colors={['#90cac7', '#020e0e']}
       style={styles.container}
@@ -243,6 +292,7 @@ export default function ProfilesScreen() {
       end={{ x: 0, y: 1 }}
       locations={[0.5, 1]}
     >
+      {/* Custom Header component with search functionality */}
       <Header 
         showSearch={showSearch}
         searchValue={searchQuery}
@@ -255,50 +305,74 @@ export default function ProfilesScreen() {
         isProfilesTab={true}
       />
 
-      {/* Action cards for creating profile and group */}
+      {/* Container for action cards (Create Profile and Create Group) */}
       <View style={styles.actionCardsContainer}>
+        {/* Touchable card for creating a new profile */}
         <Pressable 
-          style={styles.actionCard} 
-          onPress={handleNavigateToCreateProfile}
+          onPress={handleOpenProfileModal}
+          style={styles.actionCardBase}
         >
-          <View style={styles.actionCardIcon}>
-            <Ionicons name="person-add" size={24} color="#437C79" />
-          </View>
-          <Text style={styles.actionCardText}>Create Profile</Text>
+          <LinearGradient
+            colors={['#C5EEED', '#69aeaa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.actionCard}
+          >
+            {/* Icon container */}
+            <View style={styles.actionCardIcon}>
+              <Ionicons name="person-add" size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionCardText}>Create Profile</Text>
+          </LinearGradient>
         </Pressable>
         
+        {/* Touchable card for creating a new group */}
         <Pressable 
-          style={styles.actionCard}
-          onPress={handleNavigateToCreateGroup}
+          onPress={handleOpenGroupModal}
+          style={styles.actionCardBase}
         >
-          <View style={styles.actionCardIcon}>
-            <Ionicons name="people" size={24} color="#437C79" />
-          </View>
-          <Text style={styles.actionCardText}>Create Group</Text>
+          <LinearGradient
+            colors={['#C5EEED', '#69aeaa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.actionCard}
+          >
+            {/* Icon container */}
+            <View style={styles.actionCardIcon}>
+              <Ionicons name="people" size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionCardText}>Create Group</Text>
+          </LinearGradient>
         </Pressable>
       </View>
 
+      {/* Scrollable horizontal container */}
       <ScrollView 
-        horizontal 
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={[styles.tabsContainer, { backgroundColor: 'transparent' }]}
         onLayout={logLayout('TabsScrollView')}
-        contentContainerStyle={styles.tabs}>
+        contentContainerStyle={styles.tabs}
+      >
         {groupsLoading ? (
+          // Show loading indicator while groups are being fetched
           <View style={styles.groupLoading}>
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.groupLoadingText}>Loading groups...</Text>
           </View>
         ) : (
+          // Map through each group name and create a pressable tab for it
           groupNames.map((groupName) => (
             <Pressable
-              key={groupName}
-              onPress={() => setSelectedGroup(groupName)}>
+              key={groupName} // Unique React key for each item in the list
+              onPress={() => setSelectedGroup(groupName)} // Set this as the selected group when pressed
+            >
               <Text
                 style={[
-                  styles.tabText,
-                  selectedGroup === groupName && styles.tabTextActive,
-                ]}>
+                  styles.tabText, // Base tab text style
+                  selectedGroup === groupName && styles.tabTextActive, // Add active style if this tab is selected
+                ]}
+              >
                 {groupName}
               </Text>
             </Pressable>
@@ -307,10 +381,12 @@ export default function ProfilesScreen() {
       </ScrollView>
 
       {profilesLoading ? (
+        // Show loading spinner while profiles are being fetched
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#437C79" />
         </View>
       ) : error ? (
+        // Show error message if profile loading failed
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error loading profiles</Text>
           <Pressable style={styles.retryButton} onPress={refetch}>
@@ -318,6 +394,7 @@ export default function ProfilesScreen() {
           </Pressable>
         </View>
       ) : (
+        // If profiles loaded successfully, display them in a scrollable list
         <FlatList
           onLayout={logLayout('FlatList')}
           data={filteredProfiles}
@@ -329,224 +406,246 @@ export default function ProfilesScreen() {
           alwaysBounceVertical={false}
         />
       )}
+
+      {/* Profile modal */}
+      <ProfileModal 
+        visible={showProfileModal} 
+        onClose={handleCloseProfileModal} 
+      />
+      
+      {/* Group modal */}
+      <GroupModal 
+        visible={showGroupModal} 
+        onClose={handleCloseGroupModal} 
+      />
     </LinearGradient>
   );
 }
 
+// StyleSheet contains all the styling for the component's UI elements
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, // Take up all available space
   },
   actionCardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    flexDirection: 'row', // Arrange children horizontally
+    justifyContent: 'space-between', // Space evenly between action cards
+    paddingHorizontal: 16, // Add padding on left and right
+    paddingVertical: 8, // Add padding on top and bottom
+  },
+  actionCardBase: {
+    width: '48%', // Take up slightly less than half the width (with spacing)
+    borderRadius: 12, // Rounded corners
+    shadowColor: '#000', // Black shadow
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset (x and y)
+    shadowOpacity: 0.1, // Shadow transparency
+    shadowRadius: 4, // Shadow blur radius
+    elevation: 3, // Android shadow elevation
   },
   actionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 12, // Rounded corners
+    padding: 10, // Inner spacing
+    flexDirection: 'row', // Arrange icon and text horizontally
+    alignItems: 'center', // Center items vertically
+    justifyContent: 'flex-start', // Align items to the start
   },
   actionCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(198, 234, 233, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    width: 40, // Fixed width for icon container
+    height: 18, // Fixed height for icon container
+    backgroundColor: 'transparent', // Fully transparent background
+    alignItems: 'center', // Center icon horizontally
+    justifyContent: 'center', // Center icon vertically
+    marginRight: 10, // Space between icon and text
   },
   actionCardText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#437C79',
+    fontSize: 12, // Text size
+    fontWeight: '500', // Medium font weight
+    color: '#FFFFFF', // White text color to contrast with gradient background
   },
   headerContainer: {
-    backgroundColor: '#020e0e',
-    paddingHorizontal: 16,
-    zIndex: 2,
+    backgroundColor: '#020e0e', // Dark background for header
+    paddingHorizontal: 16, // Padding on left and right sides
+    zIndex: 2, // Ensures header appears above other elements
   },
   searchWrapper: {
-    marginTop: 10,
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#072727',
-    borderRadius: 12,
-    padding: 10,
+    marginTop: 10, // Space above the search box
+    marginBottom: 20, // Space below the search box
+    flexDirection: 'row', // Arrange children horizontally
+    alignItems: 'center', // Center items vertically
+    backgroundColor: '#072727', // Dark background for search box
+    borderRadius: 12, // Rounded corners
+    padding: 10, // Padding inside search box
   },
   searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    color: '#FFFFFF',
-    fontSize: 16,
+    flex: 1, // Take up all available space
+    marginLeft: 10, // Space to the left of the input text
+    color: '#FFFFFF', // White text
+    fontSize: 14, // Text size
   },
   searchIcon: {
-    color: '#437C79',
+    color: '#437C79', // Teal color for search icon
   },
   filterIcon: {
-    color: '#437C79',
-    marginLeft: 10,
+    color: '#437C79', // Teal color for filter icon
+    marginLeft: 10, // Space to the left of filter icon
   },
   content: {
-    flex: 1,
-    backgroundColor: '#020e0e',
+    flex: 1, // Take up all available space
+    backgroundColor: '#020e0e', // Dark background color
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1, // Take up all available space
+    justifyContent: 'center', // Center content vertically
+    alignItems: 'center', // Center content horizontally
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    flex: 1, // Take up all available space
+    justifyContent: 'center', // Center content vertically
+    alignItems: 'center', // Center content horizontally
+    paddingHorizontal: 24, // Padding on left and right sides
   },
   errorText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    marginBottom: 16,
-    textAlign: 'center',
+    fontSize: 16, // Text size
+    fontWeight: '500', // Medium font weight
+    color: '#FFFFFF', // White text
+    marginBottom: 16, // Space below the text
+    textAlign: 'center', // Center text horizontally
   },
   retryButton: {
-    backgroundColor: '#437C79',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: '#437C79', // Teal background for button
+    paddingHorizontal: 16, // Padding on left and right sides
+    paddingVertical: 8, // Padding on top and bottom
+    borderRadius: 8, // Rounded corners
   },
   retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: '#FFFFFF', // White text
+    fontWeight: '500', // Medium font weight
   },
   tabsContainer: {
-    marginVertical: 8,
+    marginVertical: 10, // Margin on top and bottom
   },
   tabs: {
-    paddingLeft: 16,
-    paddingBottom: 8,
-    gap: 16,
+    paddingLeft: 16, // Padding on the left side
+    paddingBottom: 8, // Padding on the bottom
+    gap: 16, // Space between tab items
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#020e0e',
+    fontSize: 13, // Text size
+    fontWeight: '500', // Medium font weight
+    color: '#020e0e', // Dark color for inactive tabs
   },
   tabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    borderBottomWidth: 2,
-    borderBottomColor: '#FFFFFF',
+    color: '#FFFFFF', // White color for active tab
+    fontWeight: '600', // Slightly bolder than inactive tabs
+    paddingBottom: 8, // Add space between text and border
+    borderBottomWidth: 0.5, // Bottom border to indicate active state
+    borderBottomColor: '#FFFFFF', // White border color
   },
   list: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    flexGrow: 1,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 16, // Padding on left and right sides
+    paddingTop: 8, // Padding on top
+    flexGrow: 1, // Allows the list to grow and take available space
+    backgroundColor: 'transparent', // Transparent background
   },
   profileCard: {
-    flexDirection: 'row',
-    backgroundColor: '#90cac7',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 12,
-    alignItems: 'center',
+    flexDirection: 'row', // Arrange content horizontally
+    backgroundColor: '#90cac7', // Light teal background
+    borderRadius: 12, // Rounded corners
+    padding: 12, // Inner spacing
+    shadowColor: '#000', // Black shadow
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset (x and y)
+    shadowOpacity: 0.1, // Shadow transparency
+    shadowRadius: 4, // Shadow blur radius
+    elevation: 3, // Android shadow elevation
+    marginBottom: 12, // Space below each card
+    alignItems: 'center', // Center items vertically
   },
   profileCardContent: {
-    flex: 1,
-    flexDirection: 'row',
+    flex: 1, // Take up all available space
+    flexDirection: 'row', // Arrange content horizontally
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+    width: 80, // Fixed width for profile image
+    height: 80, // Fixed height for profile image
+    borderRadius: 12, // Rounded corners
   },
   profileInfo: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 4,
+    flex: 1, // Take up all available space
+    marginLeft: 12, // Space to the left
+    marginRight: 4, // Space to the right
   },
   name: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#FFFFFF',
+    fontSize: 16, // Text size
+    fontWeight: '600', // Semi-bold font weight
+    marginBottom: 2, // Space below the name
+    color: '#FFFFFF', // White text color
   },
   description: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#C5EEED',
-    marginBottom: 4,
+    fontSize: 8, // Text size
+    fontWeight: '500', // Medium font weight
+    color: '#cdedec', // Light teal text color
+    marginBottom: 4, // Space below the description
   },
   bio: {
-    fontSize: 13,
-    color: '#A6DDDC',
-    marginBottom: 8,
-    lineHeight: 18,
+    fontSize: 9, // Text size
+    color: '#517b79', // Very light teal text color
+    marginBottom: 8, // Space below the bio
+    lineHeight: 14, // Space between lines of text
   },
   groupTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'nowrap',
+    flexDirection: 'row', // Arrange tags horizontally
+    alignItems: 'center', // Center items vertically
+    gap: 6, // Space between tags
+    flexWrap: 'nowrap', // Don't wrap to new lines
   },
   groupTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 12,
-    maxWidth: '45%',
+    flexDirection: 'row', // Arrange content horizontally
+    alignItems: 'center', // Center items vertically
+    paddingHorizontal: 6, // Padding on left and right
+    paddingVertical: 3, // Padding on top and bottom
+    borderRadius: 12, // Rounded corners
+    maxWidth: '45%', // Maximum width to prevent overflow
   },
   groupTagText: {
-    fontSize: 11,
-    fontWeight: '500',
-    flex: 1,
+    fontSize: 11, // Small text size
+    fontWeight: '500', // Medium font weight
+    flex: 1, // Take up available space
   },
   groupTagIcon: {
-    marginRight: 3,
+    marginRight: 9, // Space to the right of the icon
   },
   groupLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    minWidth: 120,
-    gap: 8,
+    flexDirection: 'row', // Arrange content horizontally
+    alignItems: 'center', // Center items vertically
+    justifyContent: 'center', // Center items horizontally
+    paddingHorizontal: 12, // Padding on left and right
+    minWidth: 120, // Minimum width to ensure proper spacing
+    gap: 8, // Space between elements
   },
   groupLoadingText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#FFFFFF',
+    fontSize: 13, // Text size
+    fontWeight: '500', // Medium font weight
+    color: '#FFFFFF', // White text color
   },
   deleteButton: {
-    padding: 8,
-    marginLeft: 4,
+    padding: 8, // Padding around the button
+    marginLeft: 4, // Space to the left of the button
   },
   syncIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
+    flexDirection: 'row', // Arrange content horizontally
+    alignItems: 'center', // Center items vertically
+    marginTop: 4, // Space on top
+  },
+  separator: {
+    height: 1, // Very thin line
+    width: '100%', // Full width
+    backgroundColor: '#e0e0e0', // Light gray color
+    marginVertical: 12, // Margin on top and bottom
+    opacity: 0.6, // Partial transparency
   },
   syncText: {
-    fontSize: 12,
-    color: '#437C79',
-    marginLeft: 4,
+    fontSize: 12, // Small text size
+    color: '#437C79', // Teal text color
+    marginLeft: 4, // Space to the left
   },
 });

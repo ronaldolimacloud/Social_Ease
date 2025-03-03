@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { Schema } from '@/amplify/data/resource';
 import { Hub } from 'aws-amplify/utils';
@@ -42,29 +42,37 @@ export function useProfiles(): UseProfilesReturn {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [fetchKey, setFetchKey] = useState(0); // Add a key to force refetch
 
-  // Fetch profiles function
-  const fetchProfiles = async () => {
+  // Modify fetchProfiles to be more resilient
+  const fetchProfiles = useCallback(async () => {
     try {
+      console.log('Starting profile fetch operation with key:', fetchKey);
       setLoading(true);
       setError(null);
       
       // Get the current authenticated user
       const { userId } = await getCurrentUser();
+      console.log(`Fetching profiles for user ID: ${userId}`);
       
+      // Use a more direct approach with no filtering initially
       const response = await client.models.Profile.list({
-        filter: {
-          owner: {
-            eq: userId
-          }
-        },
-        limit: 100, // Adjust based on your needs
+        limit: 1000, // Use a high limit to ensure we get all profiles
       });
 
+      console.log(`Profile list response received: ${response.data?.length || 0} profiles found`);
+
       if (response.data) {
+        // Filter client-side for the current user's profiles
+        const userProfiles = response.data.filter(profile => 
+          profile.owner === userId && !(profile as any)._deleted
+        );
+        
+        console.log(`After filtering for current user: ${userProfiles.length} profiles found`);
+        
         // Process profiles to add group associations
         const profilesWithGroups = await Promise.all(
-          response.data.map(async (profile) => {
+          userProfiles.map(async (profile) => {
             // Fetch group memberships for this profile
             const groupMembershipsResult = await client.models.ProfileGroup.list({
               filter: { profileID: { eq: profile.id } }
@@ -104,20 +112,32 @@ export function useProfiles(): UseProfilesReturn {
           })
         );
         
+        console.log(`Setting ${profilesWithGroups.length} profiles in state`);
         setProfiles(profilesWithGroups);
+      } else {
+        console.log('No profile data received from query');
+        setProfiles([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch profiles'));
       console.error('Error fetching profiles:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch profiles'));
     } finally {
       setLoading(false);
+      console.log('Profile fetch operation completed');
     }
-  };
+  }, [fetchKey]); // Add fetchKey as dependency
 
-  // Initial fetch
+  // Update the refetch function to use the key
+  const refetch = useCallback(async () => {
+    console.log('Manual refetch triggered');
+    // Increment the key to force a new fetch
+    setFetchKey(prevKey => prevKey + 1);
+  }, []);
+  
+  // Initial fetch - also when fetchKey changes
   useEffect(() => {
     fetchProfiles();
-  }, []);
+  }, [fetchKey, fetchProfiles]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -226,6 +246,6 @@ export function useProfiles(): UseProfilesReturn {
     profiles,
     loading,
     error,
-    refetch: fetchProfiles
+    refetch
   };
 } 
