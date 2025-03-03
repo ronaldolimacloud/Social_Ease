@@ -83,7 +83,9 @@ yarn-error.log
 
 # amplify
 .amplify
+amplify_outputs*
 amplify_outputs.json
+
 amplifyconfiguration*
 
 # Prebuild native folders (for CNG/Prebuild with EAS Build)
