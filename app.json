@@ -5,12 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "socialeasemobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": "1.0.1",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ronaldograxa.socialease",
+      "bundleIdentifier": "com.ronaldograxa.socialease.dev",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

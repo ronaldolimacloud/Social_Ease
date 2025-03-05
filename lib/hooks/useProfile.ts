@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { client } from '../amplify';
 import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage';
+import { getCurrentUser } from 'aws-amplify/auth';
 import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
 import { handleError, clearError } from '../utils';
 
@@ -10,7 +11,14 @@ export const useProfile = () => {
 
   const handlePhotoUpload = async (photoFile: string) => {
     try {
-      const key = `profiles/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      // Get the current user's identity ID for entity-based access control
+      const currentUser = await getCurrentUser();
+      const identityId = currentUser.userId;
+      
+      // Use entity_id path structure to ensure proper access control
+      const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const key = `profiles/${identityId}/${filename}`;
+      
       await uploadData({
         key,
         data: photoFile,
@@ -94,6 +102,56 @@ export const useProfile = () => {
     }
   };
 
+  const migratePhotoToEntityPath = async (oldKey: string) => {
+    try {
+      if (!oldKey.includes('/')) return null; // Invalid key format
+      
+      // Check if the key is already in the entity format
+      const parts = oldKey.split('/');
+      if (parts.length >= 3 && parts[0] === 'profiles') {
+        // Already in the right format (profiles/{entity_id}/filename)
+        return oldKey;
+      }
+      
+      // This is an old format key, we need to migrate it
+      const currentUser = await getCurrentUser();
+      const identityId = currentUser.userId;
+      
+      // Create a new key in the entity format
+      const filename = parts[parts.length - 1];
+      const newKey = `profiles/${identityId}/${filename}`;
+      
+      // Download the old file
+      const { url: oldUrl } = await getUrl({ key: oldKey });
+      const response = await fetch(oldUrl);
+      const blob = await response.blob();
+      
+      // Upload to the new location
+      await uploadData({
+        key: newKey,
+        data: blob,
+        options: {
+          contentType: blob.type
+        }
+      });
+      
+      // Get the URL of the new file
+      const { url: newUrl } = await getUrl({ key: newKey });
+      
+      // Try to delete the old file
+      try {
+        await removeStorage({ key: oldKey });
+      } catch (error) {
+        console.warn('Failed to delete old photo during migration:', error);
+      }
+      
+      return { key: newKey, url: newUrl.toString() };
+    } catch (error) {
+      console.error('Failed to migrate photo:', error);
+      return null;
+    }
+  };
+
   const getProfile = async (id: string, includeRelations = true) => {
     try {
       setLoading(true);
@@ -102,32 +160,51 @@ export const useProfile = () => {
       const profileResult = await client.models.Profile.get({ id });
       const profile = profileResult.data;
       
-      if (profile && includeRelations) {
-        // Fetch insights
-        const insightsResult = await client.models.Insight.list({
-          filter: { profileID: { eq: profile.id } }
-        });
+      if (profile) {
+        // Check if this profile has a photo that needs migration
+        if (profile.photoKey && !profile.photoKey.match(/^profiles\/[^/]+\/[^/]+$/)) {
+          const migrationResult = await migratePhotoToEntityPath(profile.photoKey);
+          if (migrationResult && typeof migrationResult !== 'string') {
+            // Update the profile with the new photo key and URL
+            await client.models.Profile.update({
+              id: profile.id,
+              photoKey: migrationResult.key,
+              photoUrl: migrationResult.url
+            });
+            
+            // Update local profile object
+            profile.photoKey = migrationResult.key;
+            profile.photoUrl = migrationResult.url;
+          }
+        }
+        
+        if (includeRelations) {
+          // Fetch insights
+          const insightsResult = await client.models.Insight.list({
+            filter: { profileID: { eq: profile.id } }
+          });
 
-        // Fetch group memberships
-        const groupMembershipsResult = await client.models.ProfileGroup.list({
-          filter: { profileID: { eq: profile.id } }
-        });
+          // Fetch group memberships
+          const groupMembershipsResult = await client.models.ProfileGroup.list({
+            filter: { profileID: { eq: profile.id } }
+          });
 
-        // If there are group memberships, fetch the actual groups
-        const groupIds = groupMembershipsResult.data
-          ?.map(pg => pg.groupID)
-          .filter((id): id is string => id !== null) || [];
-          
-        const groupsPromises = groupIds.map(groupId =>
-          client.models.Group.get({ id: groupId })
-        );
-        const groupsResults = await Promise.all(groupsPromises);
+          // If there are group memberships, fetch the actual groups
+          const groupIds = groupMembershipsResult.data
+            ?.map(pg => pg.groupID)
+            .filter((id): id is string => id !== null) || [];
+            
+          const groupsPromises = groupIds.map(groupId =>
+            client.models.Group.get({ id: groupId })
+          );
+          const groupsResults = await Promise.all(groupsPromises);
 
-        return {
-          ...profile,
-          insights: insightsResult.data || [],
-          groups: groupsResults.map(g => g.data).filter(Boolean) || []
-        };
+          return {
+            ...profile,
+            insights: insightsResult.data || [],
+            groups: groupsResults.map(g => g.data).filter(Boolean) || []
+          };
+        }
       }
 
       return profile;
@@ -164,7 +241,7 @@ export const useProfile = () => {
       let photoKey;
 
       if (photoFile) {
-        // Upload new photo
+        // Upload new photo with entity-based path
         const uploadResult = await handlePhotoUpload(photoFile);
         photoUrl = uploadResult.url;
         photoKey = uploadResult.key;
@@ -172,6 +249,8 @@ export const useProfile = () => {
         // Delete old photo if exists
         if (existingProfile.data?.photoKey) {
           try {
+            // The old photoKey might use the old path structure or the new entity-based one
+            // Either way, Storage has permissions to delete it based on the auth rules
             await removeStorage({ key: existingProfile.data.photoKey });
           } catch (error) {
             console.warn('Failed to delete old photo:', error);
