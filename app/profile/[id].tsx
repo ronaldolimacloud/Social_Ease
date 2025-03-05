@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,6 +45,8 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   // State for managing the new insight input field
   const [newInsight, setNewInsight] = useState('');
+  // Loading state for photo uploads
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // Custom hook for profile data operations
   const { getProfile, updateProfile } = useProfile();
 
@@ -81,16 +83,68 @@ export default function ProfileScreen() {
    * Handles profile photo selection and update
    */
   const handleEditPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      // Handle photo update
-      console.log('New photo selected:', result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Get the selected photo URI
+        const selectedPhotoUri = result.assets[0].uri;
+        console.log('New photo selected:', selectedPhotoUri);
+        
+        if (profile) {
+          try {
+            // Show loading indicator
+            setUploadingPhoto(true);
+            
+            // Call updateProfile with the new photo
+            await updateProfile(
+              profile.id,
+              {
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                description: profile.description,
+                bio: profile.bio,
+                photoUrl: profile.photoUrl // Keep the old URL reference until the new one is created
+              },
+              selectedPhotoUri, // Pass the photo URI to be uploaded
+              [], // No insights to add
+              [], // No insights to remove
+              [], // No groups to add
+              []  // No groups to remove
+            );
+            
+            // Refresh the profile data to show the new photo
+            await fetchProfile();
+            
+            // Success message could be shown here
+          } catch (uploadError) {
+            console.error('Failed to upload photo:', uploadError);
+            // Show error message to user
+            Alert.alert(
+              'Upload Failed',
+              'Failed to upload profile photo. Please try again later.',
+              [{ text: 'OK' }]
+            );
+          } finally {
+            // Hide loading indicator
+            setUploadingPhoto(false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile photo:', error);
+      setUploadingPhoto(false);
+      // Show error alert to the user
+      Alert.alert(
+        'Error',
+        'There was a problem selecting the photo. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -233,7 +287,11 @@ export default function ProfileScreen() {
           {/* Profile Header Section */}
           <View style={styles.header}>
             {/* Profile Photo with Edit Button */}
-            <Pressable onPress={handleEditPhoto} style={styles.photoContainer}>
+            <Pressable 
+              onPress={handleEditPhoto} 
+              style={styles.photoContainer}
+              disabled={uploadingPhoto} // Disable when uploading
+            >
               <Image 
                 source={{ 
                   uri: profile.photoUrl && profile.photoUrl.trim() !== '' 
@@ -243,7 +301,11 @@ export default function ProfileScreen() {
                 style={styles.photo} 
               />
               <View style={styles.editPhotoButton}>
-                <Ionicons name="camera" size={20} color="#FFFFFF" />
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="camera" size={20} color="#FFFFFF" />
+                )}
               </View>
             </Pressable>
             {/* Profile Name and Description */}
