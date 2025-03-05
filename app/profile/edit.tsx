@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Profile = {
   id: string;
@@ -187,9 +188,17 @@ export default function EditProfileScreen() {
 
   if (!profile) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.containerLoadingText}>Loading...</Text>
-      </View>
+      <LinearGradient
+        colors={['#061a1a', '#020e0e']}
+        style={styles.gradientContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        locations={[0.5, 1]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={styles.containerLoadingText}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -200,126 +209,129 @@ export default function EditProfileScreen() {
           title: 'Edit Profile',
           headerRight: () => (
             <Pressable onPress={handleSave} style={{ marginRight: 16 }}>
-              <Text style={{ color: '#007AFF', fontSize: 17 }}>Save</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 17 }}>Save</Text>
             </Pressable>
           ),
         }}
       />
-      <ScrollView style={styles.container}>
-        <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
-          <Image 
-            source={{ 
-              uri: photoUri && photoUri.trim() !== '' 
-                ? photoUri 
-                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
-            }} 
-            style={styles.photo} 
-          />
-          <View style={styles.editPhotoButton}>
-            <Ionicons name="camera" size={20} color="#FFFFFF" />
-          </View>
-        </Pressable>
-
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Enter first name"
+      <LinearGradient
+        colors={['#061a1a', '#020e0e']}
+        style={styles.gradientContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        locations={[0.5, 1]}
+      >
+        <ScrollView style={styles.container}>
+          <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
+            <Image 
+              source={{ 
+                uri: photoUri && photoUri.trim() !== '' 
+                  ? photoUri 
+                  : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
+              }} 
+              style={styles.photo} 
             />
-          </View>
+            <View style={styles.editPhotoButton}>
+              <Ionicons name="camera" size={20} color="#FFFFFF" />
+            </View>
+          </Pressable>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Enter last name"
-            />
-          </View>
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>First Name</Text>
+              <TextInput
+                style={styles.input}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Enter first name"
+              />
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={styles.input}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Enter description"
-            />
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                style={styles.input}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Enter last name"
+              />
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Enter bio"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={styles.input}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Enter description"
+              />
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Groups</Text>
-            <Pressable 
-              style={styles.groupSelector}
-              onPress={() => setShowGroupModal(true)}>
-              <Text style={styles.groupSelectorText}>
-                {selectedGroups.length > 0 
-                  ? `${selectedGroups.length} group${selectedGroups.length === 1 ? '' : 's'} selected`
-                  : 'Select groups'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#666666" />
-            </Pressable>
-            {selectedGroups.length > 0 && (
-              <View style={styles.selectedGroups}>
-                {selectedGroups.map(group => (
-                  <View key={group.id} style={styles.selectedGroup}>
-                    <Text style={styles.selectedGroupText}>{group.name}</Text>
-                    <Pressable
-                      onPress={() => toggleGroup(group)}
-                      style={styles.removeGroup}>
-                      <Ionicons name="close-circle" size={20} color="#666666" />
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-            )}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Bio</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput]}
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Enter bio"
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Groups</Text>
+              <Pressable 
+                style={styles.groupSelector}
+                onPress={() => setShowGroupModal(true)}>
+                <Text style={styles.selectedGroupsText}>
+                  {selectedGroups.length > 0 
+                    ? `${selectedGroups.length} group${selectedGroups.length === 1 ? '' : 's'} selected`
+                    : 'No groups selected'}
+                </Text>
+                <Text style={styles.addButtonText}>Add</Text>
+              </Pressable>
+              {selectedGroups.length > 0 && (
+                <View style={styles.selectedGroups}>
+                  {selectedGroups.map(group => (
+                    <View key={group.id} style={styles.selectedGroupBadge}>
+                      <Text style={styles.selectedGroupBadgeText}>{group.name}</Text>
+                      <Pressable
+                        onPress={() => toggleGroup(group)}
+                        style={styles.removeButtonContainer}>
+                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
 
       <Modal
         visible={showGroupModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowGroupModal(false)}>
+        onRequestClose={() => setShowGroupModal(false)}
+      >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Groups</Text>
-              <Pressable 
-                onPress={() => setShowGroupModal(false)}
-                style={styles.modalClose}>
-                <Ionicons name="close" size={24} color="#666666" />
-              </Pressable>
             </View>
             
             {loadingGroups ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#85c3c0" />
                 <Text style={styles.loadingText}>Loading groups...</Text>
               </View>
             ) : (
-              <ScrollView style={styles.groupsList}>
+              <ScrollView style={styles.groupList}>
                 {availableGroups.length === 0 ? (
                   <View style={styles.emptyGroupsContainer}>
                     <Text style={styles.emptyGroupsText}>No groups available</Text>
-                    <Text style={styles.emptyGroupsSubText}>Create groups in the Groups tab</Text>
                   </View>
                 ) : (
                   availableGroups.map(group => {
@@ -380,43 +392,50 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: 'transparent',
   },
   containerLoadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#85c3c0',
     textAlign: 'center',
     marginTop: 32,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   photoContainer: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    padding: 20,
+    backgroundColor: 'transparent',
+
     position: 'relative',
   },
   photo: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 4,
+    borderWidth: 0.4,
     borderColor: '#FFFFFF',
   },
   editPhotoButton: {
     position: 'absolute',
     right: '50%',
-    bottom: 24,
-    marginRight: -60,
-    backgroundColor: '#007AFF',
-    width: 36,
-    height: 36,
+    bottom: 20,
+    marginRight: -20,
+    backgroundColor: '#437C79',
+    width: 30,
+    height: 30,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 0.5,
     borderColor: '#FFFFFF',
   },
   form: {
@@ -427,57 +446,80 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginBottom: 8,
-    color: '#333333',
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', 
     borderRadius: 8,
-    padding: 12,
+    padding: 7,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    color: '#FFFFFF',
+    borderWidth: 0.1,
+    borderColor: 'rgba(229, 229, 229, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 2,
   },
-  textArea: {
-    height: 100,
+  bioInput: {
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', 
+    borderRadius: 8,
+    padding: 7,
+    fontSize: 16,
+    color: '#FFFFFF',
+    minHeight: 100,
     textAlignVertical: 'top',
+    borderWidth: 0.1,
+    borderColor: 'rgba(229, 229, 229, 0.3)',
   },
   groupSelector: {
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', 
+    borderRadius: 8,
+    padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: 'rgba(229, 229, 229, 0.3)',
   },
-  groupSelectorText: {
+  selectedGroupsText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#FFFFFF',
+  },
+  addButtonText: {
+    color: '#85c3c0',
+    fontSize: 15,
+    fontWeight: '400',
   },
   selectedGroups: {
-    marginTop: 8,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginTop: 12,
   },
-  selectedGroup: {
+  selectedGroupBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(67, 124, 121, 0.5)', // Semi-transparent background that matches theme
     borderRadius: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  selectedGroupText: {
-    fontSize: 14,
-    color: '#333333',
+  selectedGroupBadgeText: {
+    color: '#FFFFFF', // White text for better visibility
     marginRight: 4,
   },
-  removeGroup: {
+  removeButtonContainer: {
     marginLeft: 4,
+  },
+  removeButton: {
+    color: '#85c3c0', // Updated to match the color scheme
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,
@@ -485,93 +527,85 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: '#061a1a',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 16,
     maxHeight: '80%',
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: 'rgba(229, 229, 229, 0.2)',
+    paddingBottom: 16,
+    paddingHorizontal: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
-  modalClose: {
-    padding: 4,
-  },
-  groupsList: {
-    padding: 16,
+  groupList: {
+    paddingHorizontal: 16,
+    maxHeight: 400,
   },
   groupItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#F8F8F8',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(229, 229, 229, 0.2)',
   },
   groupItemSelected: {
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(67, 124, 121, 0.3)', // Semi-transparent highlight
   },
   groupIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#437C79',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   groupInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   groupName: {
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 2,
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   groupType: {
     fontSize: 14,
-    color: '#666666',
+    color: '#85c3c0',
   },
   modalDone: {
-    margin: 16,
-    backgroundColor: '#007AFF',
     padding: 16,
-    borderRadius: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(229, 229, 229, 0.2)',
     alignItems: 'center',
   },
   modalDoneText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  loadingContainer: {
-    padding: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: '#85c3c0',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#85c3c0',
     textAlign: 'center',
-    marginTop: 16,
   },
   emptyGroupsContainer: {
-    padding: 40,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
   },
   emptyGroupsText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#666666',
-    marginBottom: 8,
+    color: '#85c3c0', // Updated to match the color scheme
+    textAlign: 'center',
   },
   emptyGroupsSubText: {
     fontSize: 14,

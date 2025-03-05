@@ -53,7 +53,8 @@ export default function Header({
               source={require('../assets/images/logo.png')} 
               style={styles.logo} 
             />
-            <Text style={styles.appName}>SocialEase</Text>
+
+
           </View>
           {isProfilesTab && (
             <Pressable onPress={onSearchPress} style={styles.searchButton}>
@@ -68,29 +69,29 @@ export default function Header({
 
 const styles = StyleSheet.create<Styles>({
   container: {
-    backgroundColor: '#90cac7',
-    paddingVertical: 12,
+    backgroundColor: 'transparent',
+    paddingVertical: 18,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 25,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logo: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 8,
   },
   appName: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '500',
     marginLeft: 8,
-    color: '#020e0e',
+    color: '#FFFF',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -104,7 +105,7 @@ const styles = StyleSheet.create<Styles>({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingHorizontal: 8,
-    fontSize: 15,
+    fontSize: 12,
   },
   searchButton: {
     padding: 4,

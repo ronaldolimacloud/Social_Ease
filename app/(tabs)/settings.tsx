@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 /**
- * Settings screen component - Shows user settings and account options
+ * Settings screen component - Simplified to just show sign out functionality
  */
 export default function SettingsScreen() {
   const { user, signOut } = useAuthenticator();
@@ -22,51 +23,18 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Ionicons name="person-circle" size={80} color="#90cac7" />
-          <Text style={styles.headerText}>Account Settings</Text>
+    <LinearGradient
+      colors={['#061a1a', '#020e0e']}
+      style={styles.gradientContainer}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      locations={[0.5, 1]}
+    >
+      <View style={styles.container}>
+        <View style={styles.userInfo}>
           <Text style={styles.emailText}>{user?.username}</Text>
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile</Text>
-          <View style={styles.sectionContent}>
-            <Pressable style={styles.menuItem}>
-              <Ionicons name="person-outline" size={24} color="#90cac7" />
-              <Text style={styles.menuItemText}>Edit Profile</Text>
-              <Ionicons name="chevron-forward" size={24} color="#90cac7" style={styles.icon} />
-            </Pressable>
-            <Pressable style={styles.menuItem}>
-              <Ionicons name="notifications-outline" size={24} color="#90cac7" />
-              <Text style={styles.menuItemText}>Notifications</Text>
-              <Ionicons name="chevron-forward" size={24} color="#90cac7" style={styles.icon} />
-            </Pressable>
-            <Pressable style={styles.menuItem}>
-              <Ionicons name="lock-closed-outline" size={24} color="#90cac7" />
-              <Text style={styles.menuItemText}>Privacy</Text>
-              <Ionicons name="chevron-forward" size={24} color="#90cac7" style={styles.icon} />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App</Text>
-          <View style={styles.sectionContent}>
-            <Pressable style={styles.menuItem}>
-              <Ionicons name="help-circle-outline" size={24} color="#90cac7" />
-              <Text style={styles.menuItemText}>Help & Support</Text>
-              <Ionicons name="chevron-forward" size={24} color="#90cac7" style={styles.icon} />
-            </Pressable>
-            <Pressable style={styles.menuItem}>
-              <Ionicons name="information-circle-outline" size={24} color="#90cac7" />
-              <Text style={styles.menuItemText}>About</Text>
-              <Ionicons name="chevron-forward" size={24} color="#90cac7" style={styles.icon} />
-            </Pressable>
-          </View>
-        </View>
-
+        
         <Pressable 
           style={styles.signOutButton} 
           onPress={handleSignOut}
@@ -77,73 +45,39 @@ export default function SettingsScreen() {
             {loading ? 'Signing Out...' : 'Sign Out'}
           </Text>
         </Pressable>
-      </ScrollView>
-    </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#020e0e',
-  },
-  scrollContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: 60,
+  userInfo: {
     marginBottom: 30,
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 10,
+    alignItems: 'center',
   },
   emailText: {
     fontSize: 16,
-    color: '#90cac7',
+    color: '#85c3c0',
     marginTop: 5,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  sectionContent: {
-    backgroundColor: '#041616',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#072727',
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: '#fff',
-    marginLeft: 15,
-    flex: 1,
-  },
-  icon: {
-    marginLeft: 'auto',
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#e74c3c',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 15,
     borderRadius: 10,
-    marginTop: 30,
+    width: '80%',
+    maxWidth: 300,
   },
   signOutText: {
     color: '#fff',

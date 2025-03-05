@@ -9,7 +9,7 @@ export default function CreateScreen() {
   
   return (
     <LinearGradient
-      colors={['#90cac7', '#020e0e']}
+      colors={['#061a1a', '#020e0e']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}

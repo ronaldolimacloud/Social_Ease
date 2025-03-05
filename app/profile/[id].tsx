@@ -5,6 +5,7 @@ import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
+import { LinearGradient } from 'expo-linear-gradient';
 
 /**
  * Interface defining the structure of an insight/note about a person
@@ -178,9 +179,17 @@ export default function ProfileScreen() {
   // Show loading indicator while fetching profile data
   if (!profile) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <LinearGradient
+        colors={['#061a1a', '#020e0e']}
+        style={styles.gradientContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        locations={[0.5, 1]}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -213,90 +222,97 @@ export default function ProfileScreen() {
           },
         }}
       />
-      <ScrollView style={styles.container} bounces={false}>
-        {/* Profile Header Section */}
-        <View style={styles.header}>
-          <View style={styles.headerBackground} />
-          {/* Profile Photo with Edit Button */}
-          <Pressable onPress={handleEditPhoto} style={styles.photoContainer}>
-            <Image 
-              source={{ 
-                uri: profile.photoUrl && profile.photoUrl.trim() !== '' 
-                  ? profile.photoUrl 
-                  : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
-              }} 
-              style={styles.photo} 
-            />
-            <View style={styles.editPhotoButton}>
-              <Ionicons name="camera" size={20} color="#FFFFFF" />
-            </View>
-          </Pressable>
-          {/* Profile Name and Description */}
-          <Text style={styles.name}>{`${profile.firstName} ${profile.lastName}`}</Text>
-          <Text style={styles.description}>{profile.description}</Text>
-          {/* Group membership tags */}
-          <View style={styles.groupTags}>
-            {profile.groups.map((group, index) => (
-              <Text key={group.id} style={styles.groupTag}>
-                {group.name}
-                {index < profile.groups.length - 1 ? ' · ' : ''}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        {/* Main Content Section */}
-        <View style={styles.content}>
-          {/* About/Bio Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="information-circle" size={24} color="#437C79" />
-              <Text style={styles.sectionTitle}>About</Text>
-            </View>
-            <Text style={styles.bio}>{profile.bio}</Text>
-          </View>
-
-          {/* Insights/Notes Section */}
-          <View style={styles.section}>
-            {/* Input for adding new insights */}
-            <View style={styles.insightInput}>
-              <TextInput
-                style={styles.insightTextInput}
-                value={newInsight}
-                onChangeText={setNewInsight}
-                placeholder="Add a quick note about this person..."
-                multiline
-                placeholderTextColor="#77B8B6"
+      <LinearGradient
+        colors={['#061a1a', '#020e0e']}
+        style={styles.gradientContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        locations={[0.5, 1]}
+      >
+        <ScrollView style={styles.container} bounces={false}>
+          {/* Profile Header Section */}
+          <View style={styles.header}>
+            {/* Profile Photo with Edit Button */}
+            <Pressable onPress={handleEditPhoto} style={styles.photoContainer}>
+              <Image 
+                source={{ 
+                  uri: profile.photoUrl && profile.photoUrl.trim() !== '' 
+                    ? profile.photoUrl 
+                    : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
+                }} 
+                style={styles.photo} 
               />
-              <Pressable
-                onPress={handleAddInsight}
-                style={[
-                  styles.addInsightButton,
-                  !newInsight.trim() && styles.addInsightButtonDisabled
-                ]}>
-                <Ionicons name="add" size={24} color="#FFFFFF" />
-              </Pressable>
-            </View>
-            {/* List of existing insights */}
-            {profile.insights.length > 0 ? (
-              <View style={styles.insightsList}>
-                {profile.insights.map(insight => (
-                  <View key={insight.id} style={styles.insightItem}>
-                    <Text style={styles.insightText}>{insight.text}</Text>
-                    <Pressable
-                      onPress={() => handleRemoveInsight(insight.id)}
-                      style={styles.removeInsight}>
-                      <Ionicons name="close-circle" size={20} color="#437C79" />
-                    </Pressable>
-                  </View>
-                ))}
+              <View style={styles.editPhotoButton}>
+                <Ionicons name="camera" size={20} color="#FFFFFF" />
               </View>
-            ) : (
-              <Text style={styles.noInsights}>No notes added yet</Text>
-            )}
+            </Pressable>
+            {/* Profile Name and Description */}
+            <Text style={styles.name}>{`${profile.firstName} ${profile.lastName}`}</Text>
+            <Text style={styles.description}>{profile.description}</Text>
+            {/* Group membership tags */}
+            <View style={styles.groupTags}>
+              {profile.groups.map((group, index) => (
+                <Text key={group.id} style={styles.groupTag}>
+                  {group.name}
+                  {index < profile.groups.length - 1 ? ' · ' : ''}
+                </Text>
+              ))}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+
+          {/* Main Content Section */}
+          <View style={styles.content}>
+            {/* About/Bio Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+
+                <Text style={styles.sectionTitle}>About</Text>
+              </View>
+              <Text style={styles.bio}>{profile.bio}</Text>
+            </View>
+
+            {/* Insights/Notes Section */}
+            <View style={styles.section}>
+              {/* Input for adding new insights */}
+              <View style={styles.insightInput}>
+                <TextInput
+                  style={styles.insightTextInput}
+                  value={newInsight}
+                  onChangeText={setNewInsight}
+                  placeholder="Add a quick note..."
+                  multiline
+                  placeholderTextColor="#77B8B6"
+                />
+                <Pressable
+                  onPress={handleAddInsight}
+                  style={[
+                    styles.addInsightButton,
+                    !newInsight.trim() && styles.addInsightButtonDisabled
+                  ]}>
+                  <Ionicons name="add" size={24} color="#FFFFFF" />
+                </Pressable>
+              </View>
+              {/* List of existing insights */}
+              {profile.insights.length > 0 ? (
+                <View style={styles.insightsList}>
+                  {profile.insights.map(insight => (
+                    <View key={insight.id} style={styles.insightItem}>
+                      <Text style={styles.insightText}>{insight.text}</Text>
+                      <Pressable
+                        onPress={() => handleRemoveInsight(insight.id)}
+                        style={styles.removeInsight}>
+                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.noInsights}>No notes added yet</Text>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </>
   );
 }
@@ -306,13 +322,16 @@ export default function ProfileScreen() {
  * Uses a teal/turquoise color scheme with white accents
  */
 const styles = StyleSheet.create({
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#90cac7',
+    backgroundColor: 'transparent',
   },
   loadingText: {
     fontSize: 16,
-    color: '#437C79',
+    color: '#85c3c0',
     textAlign: 'center',
     marginTop: 32,
   },
@@ -330,7 +349,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 150,
     backgroundColor: '#437C79',
-    opacity: 0.1,
+    opacity: 1,
   },
   // Profile photo styles
   photoContainer: {
@@ -341,7 +360,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 4,
+    borderWidth: 1,
     borderColor: '#FFFFFF',
   },
   editPhotoButton: {
@@ -349,118 +368,119 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#437C79',
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 0.3,
     borderColor: '#FFFFFF',
   },
   // Profile text styles
   name: {
     fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: 'bold',
     color: '#FFFFFF',
+    marginBottom: 4,
   },
   description: {
     fontSize: 16,
-    color: '#C5EEED',
-    marginBottom: 8,
+    color: '#85c3c0',
+    marginBottom: 5,
   },
   // Group tag styles
   groupTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    marginTop: 2,
   },
   groupTag: {
-    fontSize: 14,
-    color: '#A6DDDC',
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.7,
   },
   // Content section styles
   content: {
     padding: 16,
   },
   section: {
-    backgroundColor: '#C5EEED',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', // Light teal background at 50% opacity
+    borderRadius: 10,
+    padding: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 2,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 8,
-    color: '#437C79',
+    fontSize: 12,
+    fontWeight: '200',
+    color: '#FFFFFF',
+    marginLeft: 1,
   },
   bio: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#437C79',
+    color: '#85c3c0',
   },
   // Insight input styles
   insightInput: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 8,
+    marginBottom: 16,
+    marginTop: 8,
   },
   insightTextInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
     padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#A6DDDC',
-    minHeight: 44,
-    color: '#437C79',
+    fontSize: 15,
+    color: '#FFFFFF',
   },
   addInsightButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     backgroundColor: '#437C79',
+    borderRadius: 8,
+    width: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addInsightButtonDisabled: {
-    backgroundColor: '#A6DDDC',
+    backgroundColor: 'rgba(67, 124, 121, 0.5)',
   },
   // Insight list styles
   insightsList: {
-    gap: 8,
+    marginTop: 8,
   },
   insightItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
     padding: 12,
+    marginBottom: 8,
+    alignItems: 'center',
   },
   insightText: {
     flex: 1,
     fontSize: 14,
-    color: '#437C79',
+    color: '#FFFFFF',
+    lineHeight: 20,
   },
   removeInsight: {
-    marginLeft: 8,
+    padding: 4,
   },
   noInsights: {
     fontSize: 14,
-    color: '#437C79',
+    color: '#85c3c0',
     fontStyle: 'italic',
     textAlign: 'center',
+    marginTop: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

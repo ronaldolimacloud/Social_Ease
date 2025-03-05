@@ -27,7 +27,7 @@ export default function GroupItem({ group, onDelete, syncing = false }: GroupIte
       style={styles.groupCard}
     >
       <View style={styles.groupIcon}>
-        <Ionicons name="people" size={24} color="#437C79" />
+        <Ionicons name="people" size={24} color="#FFFF" />
       </View>
       <View style={styles.groupInfo}>
         <Text style={styles.groupName}>{group.name}</Text>
@@ -42,7 +42,7 @@ export default function GroupItem({ group, onDelete, syncing = false }: GroupIte
         style={styles.deleteButton}
         onPress={() => onDelete(group.id)}
       >
-        <Ionicons name="trash-outline" size={20} color="#437C79" />
+        <Ionicons name="trash-outline" size={15} color="#FFFF" />
       </Pressable>
     </Pressable>
   );
@@ -54,13 +54,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: '#000', // Black shadow
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset (x and y)
+    shadowOpacity: 0.1, // Shadow transparency
+    shadowRadius: 4, // Shadow blur radius
     elevation: 3,
     alignItems: 'center',
-    backgroundColor: '#C5EEED',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   groupIcon: {
     width: 48,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   groupInfo: {
     flex: 1,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   groupName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#437C79',
+    color: '#FFFF',
   },
   deleteButton: {
     padding: 8,
