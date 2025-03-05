@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -49,6 +49,8 @@ export default function EditProfileScreen() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Fetch groups from the database
   useEffect(() => {
@@ -120,15 +122,49 @@ export default function EditProfileScreen() {
   }, [id]);
 
   const handleSelectPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      // Request permissions first if needed
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          'Permission Required',
+          'You need to allow access to your photos to change your profile picture.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8, // Slightly reduced quality for better upload performance
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setPhotoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImageUri = result.assets[0].uri;
+        console.log("Selected image URI:", selectedImageUri);
+        setPhotoUri(selectedImageUri);
+        setUploadingPhoto(true);
+        
+        try {
+          // Simulate upload progress - this is just UI feedback, not actual upload
+          setTimeout(() => {
+            setUploadingPhoto(false);
+          }, 1500);
+        } catch (error) {
+          setUploadingPhoto(false);
+          console.error('Error processing selected photo:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting photo:', error);
+      Alert.alert(
+        'Error',
+        'There was a problem selecting the photo. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -146,30 +182,47 @@ export default function EditProfileScreen() {
   const handleSave = async () => {
     if (!profile) return;
 
+    // Validate required fields
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert(
+        'Missing Information',
+        'Please provide your first and last name.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Prepare profile data for update
     const profileData = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       description: description.trim(),
       bio: bio.trim(),
-      photoUrl: profile.photoUrl, // Use existing photoUrl for now
     };
 
-    // Determine if we have a new photo to upload
-    const hasNewPhoto = photoUri !== profile.photoUrl;
-    const photoToUpload = hasNewPhoto ? photoUri : undefined;
-
-    // Calculate groups to add and remove
-    const currentGroupIds = profile.groups.map(g => g.id);
-    const selectedGroupIds = selectedGroups.map(g => g.id);
-    
-    const groupsToAdd = selectedGroups.filter(g => !currentGroupIds.includes(g.id));
-    const groupsToRemove = profile.groups
-      .filter(g => !selectedGroupIds.includes(g.id))
-      .map(g => g.id);
-
     try {
-      await updateProfile(
+      // Show saving indicator
+      setSavingProfile(true);
+      
+      // Determine if we have a new photo to upload
+      const hasNewPhoto = photoUri !== profile.photoUrl;
+      const photoToUpload = hasNewPhoto ? photoUri : undefined;
+
+      // Calculate groups to add and remove
+      const currentGroupIds = profile.groups.map(g => g.id);
+      const selectedGroupIds = selectedGroups.map(g => g.id);
+      
+      const groupsToAdd = selectedGroups.filter(g => !currentGroupIds.includes(g.id));
+      const groupsToRemove = profile.groups
+        .filter(g => !selectedGroupIds.includes(g.id))
+        .map(g => g.id);
+        
+      console.log("Updating profile with photo:", hasNewPhoto ? "new photo" : "no new photo");
+      if (hasNewPhoto) {
+        console.log("Photo URI to upload:", photoToUpload);
+      }
+
+      const updatedProfile = await updateProfile(
         profile.id,       // ID of the profile to update
         profileData,      // Basic profile data
         photoToUpload,    // New photo if any
@@ -179,10 +232,22 @@ export default function EditProfileScreen() {
         groupsToRemove    // Groups to remove
       );
       
+      console.log("Profile updated successfully:", updatedProfile.id);
+      if (updatedProfile.photoUrl) {
+        console.log("New photo URL:", updatedProfile.photoUrl);
+      }
+      
       router.back();
     } catch (error) {
       console.error('Error updating profile:', error);
-      // Optionally handle error state here
+      // Show error message to the user
+      Alert.alert(
+        'Update Failed',
+        'There was a problem updating your profile. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -208,8 +273,16 @@ export default function EditProfileScreen() {
         options={{
           title: 'Edit Profile',
           headerRight: () => (
-            <Pressable onPress={handleSave} style={{ marginRight: 16 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 17 }}>Save</Text>
+            <Pressable 
+              onPress={handleSave} 
+              style={{ marginRight: 16 }}
+              disabled={savingProfile}
+            >
+              {savingProfile ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={{ color: '#FFFFFF', fontSize: 17 }}>Save</Text>
+              )}
             </Pressable>
           ),
         }}
@@ -222,7 +295,11 @@ export default function EditProfileScreen() {
         locations={[0.5, 1]}
       >
         <ScrollView style={styles.container}>
-          <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
+          <Pressable 
+            onPress={handleSelectPhoto} 
+            style={styles.photoContainer}
+            disabled={uploadingPhoto || savingProfile}
+          >
             <Image 
               source={{ 
                 uri: photoUri && photoUri.trim() !== '' 
@@ -232,7 +309,11 @@ export default function EditProfileScreen() {
               style={styles.photo} 
             />
             <View style={styles.editPhotoButton}>
-              <Ionicons name="camera" size={20} color="#FFFFFF" />
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="camera" size={20} color="#FFFFFF" />
+              )}
             </View>
           </Pressable>
 

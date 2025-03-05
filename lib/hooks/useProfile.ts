@@ -11,28 +11,85 @@ export const useProfile = () => {
 
   const handlePhotoUpload = async (photoFile: string) => {
     try {
+      console.log('Starting photo upload with file:', typeof photoFile === 'string' ? 'string URI' : 'unknown type');
+      
       // Get the current user's identity ID for entity-based access control
-      const currentUser = await getCurrentUser();
-      const identityId = currentUser.userId;
+      let entityId = '';
+      try {
+        const currentUser = await getCurrentUser();
+        entityId = currentUser.userId;
+        console.log('Got userId for storage path:', entityId);
+      } catch (authErr) {
+        console.error('Error getting current user identity:', authErr);
+        throw new Error('Failed to get user identity for storage. Are you logged in?');
+      }
       
-      // Use entity_id path structure to ensure proper access control
+      if (!entityId) {
+        console.error('No entity ID found. User may not be authenticated properly.');
+        throw new Error('No entity ID found. Please log out and log back in.');
+      }
+      
+      // Use correct path structure that matches the storage configuration
+      // profiles/{entity_id}/filename - must exactly match the pattern in storage/resource.ts
       const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const key = `profiles/${identityId}/${filename}`;
+      const key = `profiles/${entityId}/${filename}`;
       
-      await uploadData({
-        key,
-        data: photoFile,
-        options: {
-          contentType: 'image/jpeg'
+      console.log(`Uploading to key: ${key}`);
+      
+      try {
+        // Convert file URI to blob data
+        let fileData: Blob;
+        
+        // If the photoFile is a local URI (starts with file://) we need to fetch it first
+        if (photoFile.startsWith('file://') || photoFile.startsWith('content://')) {
+          console.log('Converting local file URI to binary data');
+          try {
+            const response = await fetch(photoFile);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            fileData = blob;
+            console.log('Successfully converted file to blob, size:', blob.size);
+          } catch (fetchError) {
+            console.error('Error fetching local file:', fetchError);
+            throw new Error('Failed to read the selected image. Please try again with a different image.');
+          }
+        } else {
+          // Handle base64 data URIs if needed
+          throw new Error('Unsupported image format. Only file:// URIs are supported.');
         }
-      });
-      const { url } = await getUrl({ key });
-      return { url: url.toString(), key };
+        
+        // Upload the file data to S3
+        const uploadResult = await uploadData({
+          key,
+          data: fileData,
+          options: {
+            contentType: 'image/jpeg',
+            accessLevel: 'private'
+          }
+        }).result;
+        
+        console.log('Upload successful, getting URL');
+        const { url } = await getUrl({ key });
+        console.log('Photo uploaded successfully with URL:', url.toString());
+        
+        return { url: url.toString(), key };
+      } catch (uploadErr) {
+        console.error('Error during S3 upload:', uploadErr);
+        if (uploadErr instanceof Error && uploadErr.message.includes('credentials')) {
+          throw new Error('Authentication issue. Please log out and log back in.');
+        }
+        throw uploadErr;
+      }
     } catch (err) {
       // Detailed error logging for photo upload errors
+      console.error('--- PHOTO UPLOAD ERROR ---');
       if (err instanceof Error) {
         console.error(`Error uploading photo - Type: ${err.name}, Message: ${err.message}`);
         if (err.stack) console.error(`Stack trace: ${err.stack}`);
+      } else {
+        console.error('Unknown error type:', err);
       }
       throw err;
     }
@@ -238,32 +295,50 @@ export const useProfile = () => {
       // First, get the existing profile
       const existingProfile = await client.models.Profile.get({ id });
       let photoUrl = input.photoUrl;
-      let photoKey;
+      let photoKey = existingProfile.data?.photoKey;
 
       if (photoFile) {
-        // Upload new photo with entity-based path
-        const uploadResult = await handlePhotoUpload(photoFile);
-        photoUrl = uploadResult.url;
-        photoKey = uploadResult.key;
+        console.log('Update profile: New photo provided, starting upload process');
+        try {
+          // Upload new photo with entity-based path
+          const uploadResult = await handlePhotoUpload(photoFile);
+          photoUrl = uploadResult.url;
+          photoKey = uploadResult.key;
+          console.log('Photo uploaded successfully, new URL:', photoUrl);
 
-        // Delete old photo if exists
-        if (existingProfile.data?.photoKey) {
-          try {
-            // The old photoKey might use the old path structure or the new entity-based one
-            // Either way, Storage has permissions to delete it based on the auth rules
-            await removeStorage({ key: existingProfile.data.photoKey });
-          } catch (error) {
-            console.warn('Failed to delete old photo:', error);
+          // Delete old photo if exists
+          if (existingProfile.data?.photoKey) {
+            console.log('Attempting to delete old photo:', existingProfile.data.photoKey);
+            try {
+              await removeStorage({ 
+                key: existingProfile.data.photoKey,
+                options: { accessLevel: 'private' }
+              });
+              console.log('Old photo deleted successfully');
+            } catch (error) {
+              console.warn('Failed to delete old photo:', error);
+              // Continue with the update even if old photo deletion fails
+            }
           }
+        } catch (photoError) {
+          console.error('Error during photo update process:', photoError);
+          throw photoError; // Re-throw to be caught by the outer try/catch
         }
       }
 
-      // Update the profile
+      // Update the profile with explicitly setting both photoUrl and photoKey
+      console.log('Updating profile with data:', {
+        id,
+        ...input,
+        photoUrl,
+        photoKey
+      });
+      
       const profileResult = await client.models.Profile.update({
         id,
         ...input,
-        ...(photoUrl && { photoUrl }),
-        ...(photoKey && { photoKey }),
+        photoUrl,
+        photoKey,
       });
 
       const profile = profileResult.data;

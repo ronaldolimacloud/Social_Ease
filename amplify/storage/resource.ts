@@ -9,7 +9,7 @@ export const storage = defineStorage({
       allow.entity('identity').to(['read', 'write', 'delete']),
       // Other authenticated users can only view photos
       allow.authenticated.to(['read']),
-      // Guests can only view photos, can't list all photos
+      // Guests can only view photos
       allow.guest.to(['read'])
     ]
   })
