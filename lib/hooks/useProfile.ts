@@ -4,6 +4,16 @@ import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
 import { handleError, clearError } from '../utils';
+import { generateClient } from 'aws-amplify/data';
+import { Schema } from '@/amplify/data/resource';
+import { Alert } from 'react-native';
+import { Dispatch, SetStateAction } from 'react';
+import { handleError as newHandleError, getErrorMessage } from '../errorHandling';
+import { PROFILE_PHOTOS_PREFIX } from '../constants';
+import { randomUUID } from 'expo-crypto';
+
+// Import the default profile image
+const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
 
 export const useProfile = () => {
   const [loading, setLoading] = useState(false);

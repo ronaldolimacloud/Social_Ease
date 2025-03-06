@@ -9,6 +9,10 @@ import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
 // Import our profile modal component
 import ProfileModal from '../../components/ProfileModal';
+import CustomAlert from '../../components/CustomAlert';
+
+// Import the logo directly
+const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
 
 // Updated function to use actual groups from the database
 const useGroups = () => {
@@ -68,6 +72,10 @@ export default function ProfilesScreen() {
   // Add state for refresh control
   const [refreshing, setRefreshing] = useState(false);
   
+  // Add state for custom alert
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
+  
   // Update selected group when URL parameter changes or when group names are loaded
   useEffect(() => {
     if (params.selectedGroup && groupNames.includes(params.selectedGroup)) {
@@ -125,83 +133,52 @@ export default function ProfilesScreen() {
 
   // Component to render individual profile cards
   const renderProfile = ({ item }: { item: Profile }) => (
-    <View style={styles.profileCard}>
+    <View style={styles.profileGridItem}>
       <Link href={`/profile/${item.id}`} asChild>
-        <Pressable style={styles.profileCardContent}>
+        <Pressable style={styles.profileGridContent}>
           <Image 
-            source={{ 
-              uri: (item.photoUrl && item.photoUrl.trim() !== '') 
-                ? item.photoUrl 
-                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop' 
-            }} 
-            style={styles.profileImage} 
+            source={
+              item.photoUrl && item.photoUrl.trim() !== ''
+                ? { uri: item.photoUrl }
+                : DEFAULT_PROFILE_IMAGE
+            } 
+            style={styles.profileGridImage} 
           />
-          <View style={styles.profileInfo}>
-            <Text style={styles.name}>{`${item.firstName} ${item.lastName}`}</Text>
-            {item.description && <Text style={styles.description}>{item.description}</Text>}
-            {item.bio && <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>}
-            {/* Group tags section */}
+          {/* Text overlay on the image */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.profileTextOverlay}
+          >
+            <Text style={styles.gridName} numberOfLines={1}>{`${item.firstName} ${item.lastName}`}</Text>
+            {item.description && (
+              <Text style={styles.gridDescription} numberOfLines={1}>{item.description}</Text>
+            )}
+            
+            {/* Group tag as a small chip */}
             {item.groups && item.groups.length > 0 && (
-              <View style={styles.groupTags}>
-                {item.groups.map(group => (
-                  <View 
-                    key={group.id} 
-                    style={[
-                      styles.groupTag,
-                      { backgroundColor: 
-                        group.type === 'work' ? '#C5EEED' : 
-                        group.type === 'school' ? '#A6DDDC' : 
-                        group.type === 'social' ? '#77B8B6' : '#437C79' 
-                      }
-                    ]}>
-                    <Ionicons 
-                      name={
-                        group.type === 'work' ? 'business' : 
-                        group.type === 'school' ? 'school' : 
-                        group.type === 'social' ? 'people' : 'grid'
-                      } 
-                      size={12} 
-                      color={
-                        group.type === 'work' ? '#437C79' : 
-                        group.type === 'school' ? '#437C79' : 
-                        group.type === 'social' ? '#437C79' : '#082322'
-                      }
-                      style={styles.groupTagIcon}
-                    />
-                    <Text 
-                      style={[
-                        styles.groupTagText,
-                        { color: 
-                          group.type === 'work' ? '#437C79' : 
-                          group.type === 'school' ? '#437C79' : 
-                          group.type === 'social' ? '#437C79' : '#082322' 
-                        }
-                      ]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {group.name}
-                    </Text>
-                  </View>
-                ))}
+              <View style={styles.gridGroupTag}>
+                <Ionicons 
+                  name={
+                    item.groups[0].type === 'work' ? 'business' : 
+                    item.groups[0].type === 'school' ? 'school' : 
+                    item.groups[0].type === 'social' ? 'people' : 'grid'
+                  } 
+                  size={10} 
+                  color="#FFFFFF"
+                  style={styles.gridGroupTagIcon}
+                />
+                <Text 
+                  style={styles.gridGroupTagText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.groups[0].name}
+                </Text>
               </View>
             )}
-            {/* Show syncing indicator if this profile is being deleted */}
-            {syncingProfiles[item.id] && (
-              <View style={styles.syncIndicator}>
-                <ActivityIndicator size="small" color="#437C79" />
-                <Text style={styles.syncText}>Syncing...</Text>
-              </View>
-            )}
-          </View>
+          </LinearGradient>
         </Pressable>
       </Link>
-      <Pressable 
-        style={styles.deleteButton}
-        onPress={() => handleDeleteProfile(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#437C79" />
-      </Pressable>
     </View>
   );
 
@@ -229,62 +206,60 @@ export default function ProfilesScreen() {
     refetch();
   };
 
-  // Function to handle the deletion of a profile
+  // Update the delete handler
   const handleDeleteProfile = (profileId: string) => {
-    // Display a confirmation dialog to prevent accidental deletions
-    Alert.alert(
-      "Delete Profile", // Title of the alert dialog
-      "Are you sure you want to delete this profile? This action cannot be undone.", // Explanatory message
-      [
-        {
-          text: "Cancel", // Text for the cancel button
-          style: "cancel" // Style applied to show it's a cancellation action
-        },
-        {
-          text: "Delete", // Text for the delete confirmation button
-          style: "destructive", // Style applied to indicate destructive action (typically red)
-          onPress: async () => { // Function executed when the delete button is pressed
-            try {
-              // Update state to show this profile is currently being synchronized/processed
-              setSyncingProfiles(prev => ({ ...prev, [profileId]: true }));
-              
-              // Delete the profile from the database using the deleteProfile function
-              await deleteProfile(profileId);
-              
-              // Remove this profile from the syncing state after successful deletion
-              setSyncingProfiles(prev => {
-                // Create a copy of the previous state to avoid direct mutation
-                const newState = { ...prev };
-                // Remove this specific profile from the syncing state
-                delete newState[profileId];
-                // Return the updated state without the deleted profile
-                return newState;
-              });
-            } catch (error) {
-              // Log any errors that occur during deletion to the console
-              console.error('Error deleting profile:', error);
-              
-              // Even if deletion fails, remove this profile from syncing state
-              setSyncingProfiles(prev => {
-                // Create a copy of the previous state to avoid direct mutation
-                const newState = { ...prev };
-                // Remove this specific profile from the syncing state
-                delete newState[profileId];
-                // Return the updated state
-                return newState;
-              });
-              
-              // Show an error message to the user if deletion fails
-              Alert.alert(
-                "Error", // Title of the error alert
-                "Failed to delete profile. Please try again.", // Explanatory error message
-                [{ text: "OK" }] // Single button to dismiss the alert
-              );
-            }
-          }
-        }
-      ]
-    );
+    setProfileToDelete(profileId);
+    setShowDeleteAlert(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!profileToDelete) return;
+    
+    try {
+      // Update state to show this profile is currently being synchronized/processed
+      setSyncingProfiles(prev => ({ ...prev, [profileToDelete]: true }));
+      
+      // Delete the profile from the database using the deleteProfile function
+      await deleteProfile(profileToDelete);
+      
+      // Remove this profile from the syncing state after successful deletion
+      setSyncingProfiles(prev => {
+        // Create a copy of the previous state to avoid direct mutation
+        const newState = { ...prev };
+        // Remove this specific profile from the syncing state
+        delete newState[profileToDelete];
+        // Return the updated state without the deleted profile
+        return newState;
+      });
+    } catch (error) {
+      // Log any errors that occur during deletion to the console
+      console.error('Error deleting profile:', error);
+      
+      // Even if deletion fails, remove this profile from syncing state
+      setSyncingProfiles(prev => {
+        // Create a copy of the previous state to avoid direct mutation
+        const newState = { ...prev };
+        // Remove this specific profile from the syncing state
+        delete newState[profileToDelete];
+        // Return the updated state
+        return newState;
+      });
+      
+      // Show an error message to the user if deletion fails
+      Alert.alert(
+        "Error", // Title of the error alert
+        "Failed to delete profile. Please try again.", // Explanatory error message
+        [{ text: "OK" }] // Single button to dismiss the alert
+      );
+    } finally {
+      setShowDeleteAlert(false);
+      setProfileToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteAlert(false);
+    setProfileToDelete(null);
   };
 
   // Handle refresh
@@ -314,6 +289,20 @@ export default function ProfilesScreen() {
       end={{ x: 0, y: 1 }}
       locations={[0.5, 1]}
     >
+      {/* Custom Delete Alert */}
+      <CustomAlert
+        visible={showDeleteAlert}
+        title="Delete Profile"
+        message="Are you sure you want to delete this profile? This action cannot be undone."
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        loading={profileToDelete ? syncingProfiles[profileToDelete] : false}
+        icon="trash-outline"
+      />
+
       {/* Custom Header component with search functionality */}
       <Header 
         showSearch={showSearch}
@@ -342,7 +331,7 @@ export default function ProfilesScreen() {
           >
             {/* Icon container */}
             <View style={styles.actionCardIcon}>
-              <Ionicons name="person-add" size={24} color="#FFFFFF" />
+              <Ionicons name="person-add" size={18} color="#FFFFFF" />
             </View>
             <Text style={styles.actionCardText}>Create Profile</Text>
           </LinearGradient>
@@ -407,6 +396,8 @@ export default function ProfilesScreen() {
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
           alwaysBounceVertical={false}
+          numColumns={2} // Display 2 profiles per row
+          columnWrapperStyle={styles.profilesRow}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -556,77 +547,78 @@ const styles = StyleSheet.create({
     borderBottomColor: '#FFFFFF', // White border color
   },
   list: {
-    paddingHorizontal: 16, // Padding on left and right sides
-    paddingTop: 8, // Padding on top
-    flexGrow: 1, // Allows the list to grow and take available space
-    backgroundColor: 'transparent', // Transparent background
+    paddingHorizontal: 8, // Slightly tighter padding for larger images
+    paddingTop: 8,
+    paddingBottom: 16,
+    flexGrow: 1,
+    backgroundColor: 'transparent',
   },
-  profileCard: {
-    flexDirection: 'row', // Arrange content horizontally
-    backgroundColor: 'rgba(144, 202, 199, 0.1)', // Light teal background at 50% opacity
-    borderRadius: 12, // Rounded corners
-    padding: 12, // Inner spacing
-    shadowColor: '#000', // Black shadow
-    shadowOffset: { width: 0, height: 2 }, // Shadow offset (x and y)
-    shadowOpacity: 0.1, // Shadow transparency
-    shadowRadius: 4, // Shadow blur radius
-    elevation: 3, // Android shadow elevation
-    marginBottom: 12, // Space below each card
-    alignItems: 'center', // Center items vertically
+  profilesRow: {
+    justifyContent: 'space-between', // Add space between the grid items
   },
-  profileCardContent: {
-    flex: 1, // Take up all available space
-    flexDirection: 'row', // Arrange content horizontally
+  profileGridItem: {
+    width: '48%', // Take up slightly less than half the screen width
+    aspectRatio: 0.85, // Control the aspect ratio of the card
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden', // Ensure image stays within borders
   },
-  profileImage: {
-    width: 80, // Fixed width for profile image
-    height: 80, // Fixed height for profile image
-    borderRadius: 12, // Rounded corners
+  profileGridContent: {
+    flex: 1, // Take up all space
+    position: 'relative', // For positioning overlay
   },
-  profileInfo: {
-    flex: 1, // Take up all available space
-    marginLeft: 12, // Space to the left
-    marginRight: 4, // Space to the right
+  profileGridImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12, // Match the card's border radius
   },
-  name: {
-    fontSize: 16, // Text size
-    fontWeight: '600', // Semi-bold font weight
-    marginBottom: 2, // Space below the name
-    color: '#FFFFFF', // White text color
+  profileTextOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
-  description: {
-    fontSize: 8, // Text size
-    fontWeight: '500', // Medium font weight
-    color: '#cdedec', // Light teal text color
-    marginBottom: 4, // Space below the description
+  gridName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    marginBottom: 2,
   },
-  bio: {
-    fontSize: 9, // Text size
-    color: '#517b79', // Very light teal text color
-    marginBottom: 8, // Space below the bio
-    lineHeight: 14, // Space between lines of text
+  gridDescription: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#e5e5e5',
+    marginBottom: 4,
+    opacity: 0.9,
   },
-  groupTags: {
-    flexDirection: 'row', // Arrange tags horizontally
-    alignItems: 'center', // Center items vertically
-    gap: 6, // Space between tags
-    flexWrap: 'nowrap', // Don't wrap to new lines
+  gridGroupTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(67, 124, 121, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start', // Only as wide as needed
+    marginTop: 4,
   },
-  groupTag: {
-    flexDirection: 'row', // Arrange content horizontally
-    alignItems: 'center', // Center items vertically
-    paddingHorizontal: 6, // Padding on left and right
-    paddingVertical: 3, // Padding on top and bottom
-    borderRadius: 12, // Rounded corners
-    maxWidth: '45%', // Maximum width to prevent overflow
+  gridGroupTagIcon: {
+    marginRight: 4,
   },
-  groupTagText: {
-    fontSize: 11, // Small text size
-    fontWeight: '500', // Medium font weight
-    flex: 1, // Take up available space
-  },
-  groupTagIcon: {
-    marginRight: 9, // Space to the right of the icon
+  gridGroupTagText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
   groupLoading: {
     flexDirection: 'row', // Arrange content horizontally

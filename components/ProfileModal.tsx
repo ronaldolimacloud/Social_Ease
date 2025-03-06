@@ -25,7 +25,8 @@ type ProfileModalProps = {
   onClose: () => void;
 };
 
-const DEFAULT_PHOTO = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop';
+// Import the logo directly
+const DEFAULT_PROFILE_IMAGE = require('../assets/images/logo.png');
 
 export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
   const scrollViewRef = useRef<ScrollView>(null);
@@ -175,7 +176,6 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
         lastName: lastName.trim(),
         description: description.trim(),
         bio: bio.trim(),
-        photoUrl: photoUri || DEFAULT_PHOTO,
       };
 
       // Convert insights to the format expected by the API
@@ -194,7 +194,7 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
       console.log('Creating new profile...');
       const result = await createProfile(
         profileInput,         // ProfileInput
-        undefined,            // photoFile (we're using photoUrl directly)
+        photoUri || undefined,  // Convert null to undefined for TypeScript
         insightsInput,        // insights
         groupsInput           // groups
       );
@@ -309,8 +309,8 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
               {/* Photo Selection */}
               <View style={styles.photoContainer}>
                 <Image 
-                  source={{ uri: photoUri || DEFAULT_PHOTO }} 
-                  style={styles.photo}
+                  source={photoUri ? { uri: photoUri } : DEFAULT_PROFILE_IMAGE} 
+                  style={styles.photo} 
                 />
                 <Pressable
                   onPress={handleSelectPhoto}

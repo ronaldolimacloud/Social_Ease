@@ -19,7 +19,8 @@ type Insight = {
   timestamp: string;
 };
 
-const DEFAULT_PHOTO = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop';
+// Import the logo directly
+const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
 
 export default function NewProfileScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
@@ -206,27 +207,21 @@ export default function NewProfileScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollViewContent}
           >
-            <View style={styles.photoContainer}>
-              <Pressable onPress={handleSelectPhoto} style={styles.photoContainer}>
-                {photoUri ? (
-                  <Image 
-                    source={{ 
-                      uri: photoUri && photoUri.trim() !== '' 
-                        ? photoUri 
-                        : DEFAULT_PHOTO
-                    }} 
-                    style={styles.photo} 
-                  />
-                ) : (
-                  <View style={styles.photoPlaceholder}>
-                    <Ionicons name="camera" size={32} color="#666666" />
-                    <Text style={styles.photoPlaceholderText}>Add Photo</Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-
             <View style={styles.form}>
+              <View style={styles.photoWrapper}>
+                <View style={styles.photoContainer}>
+                  <Image 
+                    source={photoUri ? { uri: photoUri } : DEFAULT_PROFILE_IMAGE} 
+                    style={styles.photo}
+                  />
+                  <Pressable
+                    style={styles.editPhotoButton}
+                    onPress={handleSelectPhoto}>
+                    <Ionicons name="camera" size={20} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>First Name<Text style={styles.required}>*</Text></Text>
                 <TextInput
@@ -425,29 +420,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-  },
-  photoContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  photo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  photoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoPlaceholderText: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
   },
   form: {
     padding: 16,
@@ -670,5 +642,32 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  photoWrapper: {
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  photoContainer: {
+    marginBottom: 20,
+    position: 'relative',
+  },
+  photo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  editPhotoButton: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#437C79',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: '#FFFFFF',
   },
 });

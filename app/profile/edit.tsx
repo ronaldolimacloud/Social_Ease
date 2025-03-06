@@ -8,6 +8,9 @@ import { useProfile } from '../../lib/hooks/useProfile';
 import { client } from '../../lib/amplify';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Import the logo directly
+const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
+
 type Profile = {
   id: string;
   firstName: string;
@@ -301,11 +304,13 @@ export default function EditProfileScreen() {
             disabled={uploadingPhoto || savingProfile}
           >
             <Image 
-              source={{ 
-                uri: photoUri && photoUri.trim() !== '' 
-                  ? photoUri 
-                  : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
-              }} 
+              source={
+                photoUri && photoUri.trim() !== '' 
+                  ? { uri: photoUri } 
+                  : profile.photoUrl && profile.photoUrl.trim() !== '' 
+                    ? { uri: profile.photoUrl } 
+                    : DEFAULT_PROFILE_IMAGE
+              } 
               style={styles.photo} 
             />
             <View style={styles.editPhotoButton}>

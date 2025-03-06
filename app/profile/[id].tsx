@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { LinearGradient } from 'expo-linear-gradient';
 import { refreshImageUrl } from '../../lib/utils';
+import CustomAlert from '../../components/CustomAlert';
+
+// Import the logo directly
+const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
 
 /**
  * Interface defining the structure of an insight/note about a person
@@ -49,8 +53,10 @@ export default function ProfileScreen() {
   // Loading state for photo uploads
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // Custom hook for profile data operations
-  const { getProfile, updateProfile } = useProfile();
+  const { getProfile, updateProfile, deleteProfile } = useProfile();
   const [refreshedPhotoUrl, setRefreshedPhotoUrl] = useState<string>('');
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   /**
    * Fetches profile data from the backend
@@ -246,6 +252,33 @@ export default function ProfileScreen() {
     }
   };
 
+  // Handler for deleting the profile
+  const handleDeleteProfile = () => {
+    setShowDeleteAlert(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setDeleting(true);
+      await deleteProfile(id as string);
+      // Navigate back after successful deletion
+      router.replace('/(tabs)/profiles');
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      Alert.alert(
+        "Error",
+        "Failed to delete profile. Please try again.",
+        [{ text: "OK" }]
+      );
+      setDeleting(false);
+      setShowDeleteAlert(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteAlert(false);
+  };
+
   // Show loading indicator while fetching profile data
   if (!profile) {
     return (
@@ -265,9 +298,23 @@ export default function ProfileScreen() {
 
   return (
     <>
+      {/* Custom Delete Alert */}
+      <CustomAlert
+        visible={showDeleteAlert}
+        title="Delete Profile"
+        message="Are you sure you want to delete this profile? This action cannot be undone."
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        loading={deleting}
+        icon="trash-outline"
+      />
+
       <Stack.Screen
         options={{
-          title: profile ? `${profile.firstName} ${profile.lastName}` : 'Profile',
+          title: '', // Empty title
           headerLeft: () => (
             <Pressable 
               onPress={() => router.back()}
@@ -280,16 +327,32 @@ export default function ProfileScreen() {
             </Pressable>
           ),
           headerRight: () => (
-            <Pressable 
-              onPress={() => router.push(`/profile/edit?id=${profile.id}`)} 
-              style={{ marginRight: 16 }}
-            >
-              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
-            </Pressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Pressable 
+                onPress={handleDeleteProfile}
+                style={{ marginRight: 16 }}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+                )}
+              </Pressable>
+              <Pressable 
+                onPress={() => router.push(`/profile/edit?id=${profile.id}`)} 
+                style={{ marginRight: 16 }}
+              >
+                <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
           ),
           headerStyle: {
-            backgroundColor: '#437C79',
+            backgroundColor: 'transparent',
           },
+          headerTransparent: true,
+          headerTitle: () => null, // Remove header title completely
+          headerShadowVisible: false,
         }}
       />
       <LinearGradient
@@ -309,13 +372,13 @@ export default function ProfileScreen() {
               disabled={uploadingPhoto} // Disable when uploading
             >
               <Image 
-                source={{ 
-                  uri: (refreshedPhotoUrl && refreshedPhotoUrl.trim() !== '') 
-                    ? refreshedPhotoUrl 
-                    : (profile.photoUrl && profile.photoUrl.trim() !== '') 
-                      ? profile.photoUrl 
-                      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
-                }} 
+                source={
+                  refreshedPhotoUrl && refreshedPhotoUrl.trim() !== '' 
+                    ? { uri: refreshedPhotoUrl }
+                    : profile.photoUrl && profile.photoUrl.trim() !== '' 
+                      ? { uri: profile.photoUrl }
+                      : DEFAULT_PROFILE_IMAGE 
+                }
                 style={styles.photo} 
               />
               <View style={styles.editPhotoButton}>
@@ -353,6 +416,24 @@ export default function ProfileScreen() {
 
             {/* Insights/Notes Section */}
             <View style={styles.section}>
+              {/* List of existing insights */}
+              {profile.insights.length > 0 ? (
+                <View style={styles.insightsList}>
+                  {profile.insights.map(insight => (
+                    <View key={insight.id} style={styles.insightItem}>
+                      <Text style={styles.insightText}>{insight.text}</Text>
+                      <Pressable
+                        onPress={() => handleRemoveInsight(insight.id)}
+                        style={styles.removeInsight}>
+                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.noInsights}>No notes added yet</Text>
+              )}
+              
               {/* Input for adding new insights */}
               <View style={styles.insightInput}>
                 <TextInput
@@ -372,23 +453,6 @@ export default function ProfileScreen() {
                   <Ionicons name="add" size={24} color="#FFFFFF" />
                 </Pressable>
               </View>
-              {/* List of existing insights */}
-              {profile.insights.length > 0 ? (
-                <View style={styles.insightsList}>
-                  {profile.insights.map(insight => (
-                    <View key={insight.id} style={styles.insightItem}>
-                      <Text style={styles.insightText}>{insight.text}</Text>
-                      <Pressable
-                        onPress={() => handleRemoveInsight(insight.id)}
-                        style={styles.removeInsight}>
-                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.noInsights}>No notes added yet</Text>
-              )}
             </View>
           </View>
         </ScrollView>
@@ -418,7 +482,7 @@ const styles = StyleSheet.create({
   // Header styles
   header: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 100,
     paddingBottom: 24,
     position: 'relative',
   },

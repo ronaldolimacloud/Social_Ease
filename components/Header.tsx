@@ -70,7 +70,7 @@ export default function Header({
 const styles = StyleSheet.create<Styles>({
   container: {
     backgroundColor: 'transparent',
-    paddingVertical: 18,
+    paddingVertical: 2,
   },
   header: {
     flexDirection: 'row',
