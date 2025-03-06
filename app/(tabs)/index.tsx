@@ -53,11 +53,11 @@ export default function HomeScreen() {
         </Text>
         
         {/* Main heading text - white color for emphasis */}
-        <Text style={styles.mainText}>CONNECT</Text>
+        <Text style={styles.mainText}>WELCOME!</Text>
         
         {/* Secondary headings - dark color for contrast */}
-        <Text style={styles.darkText}>TALK</Text>
-        <Text style={styles.darkText}>THRIVE</Text>
+        <Text style={styles.darkText}>Create profiles and groups on the tabs below.</Text>
+        
         
         {/* Descriptive subtext explaining the app's purpose
             Limited width for better readability */}
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   // Limited width and increased line height for readability
   subText: {
     fontSize: 14,
-    color: '#85c3c0',
+    color: '#FFFF',
     marginTop: 5,
     maxWidth: '90%',
     lineHeight: 22,
