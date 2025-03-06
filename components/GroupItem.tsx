@@ -14,6 +14,7 @@ type Group = {
 type GroupItemProps = {
   group: Group;
   onDelete: (id: string) => void;
+  onPress?: (groupName: string) => void;
   syncing?: boolean;
 };
 
@@ -21,10 +22,11 @@ type GroupItemProps = {
  * Simplified GroupItem component for displaying a single group
  * Shows syncing state when data is being synchronized with the cloud
  */
-export default function GroupItem({ group, onDelete, syncing = false }: GroupItemProps) {
+export default function GroupItem({ group, onDelete, onPress, syncing = false }: GroupItemProps) {
   return (
     <Pressable
       style={styles.groupCard}
+      onPress={() => onPress && onPress(group.name)}
     >
       <View style={styles.groupIcon}>
         <Ionicons name="people" size={24} color="#FFFF" />
@@ -40,7 +42,11 @@ export default function GroupItem({ group, onDelete, syncing = false }: GroupIte
       </View>
       <Pressable 
         style={styles.deleteButton}
-        onPress={() => onDelete(group.id)}
+        onPress={(e) => {
+          // Stop event propagation so parent onPress doesn't fire
+          e.stopPropagation();
+          onDelete(group.id);
+        }}
       >
         <Ionicons name="trash-outline" size={15} color="#FFFF" />
       </Pressable>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator, Alert } from 'react-native';
-import { Link, router } from 'expo-router';
+import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../components/Header';
@@ -45,6 +45,9 @@ const useGroups = () => {
 
 // Main component for displaying profiles
 export default function ProfilesScreen() {
+  // Get URL parameters
+  const params = useLocalSearchParams<{ selectedGroup?: string }>();
+  
   // Use our new profiles hook
   const { profiles, loading: profilesLoading, error, refetch } = useProfiles();
   // Use the new groups hook
@@ -53,7 +56,7 @@ export default function ProfilesScreen() {
   const { deleteProfile } = useProfile();
   
   // State management using React hooks
-  const [selectedGroup, setSelectedGroup] = useState('All'); // Currently selected group filter
+  const [selectedGroup, setSelectedGroup] = useState('All'); // Default to 'All'
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Add state for syncing profiles (similar to groups)
@@ -61,6 +64,20 @@ export default function ProfilesScreen() {
   
   // Add state for modals
   const [showProfileModal, setShowProfileModal] = useState(false);
+  
+  // Add state for refresh control
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Update selected group when URL parameter changes or when group names are loaded
+  useEffect(() => {
+    if (params.selectedGroup && groupNames.includes(params.selectedGroup)) {
+      // If there's a valid group in the URL parameters, set it as selected
+      setSelectedGroup(params.selectedGroup);
+      
+      // Clear the parameter from the URL (optional)
+      router.setParams({});
+    }
+  }, [params.selectedGroup, groupNames]);
   
   // Add debug logging to see what profiles data contains
   useEffect(() => {
@@ -96,6 +113,14 @@ export default function ProfilesScreen() {
       (profile.bio?.toLowerCase().includes(searchLower) ?? false) ||
       (profile.groups?.some(group => group.name.toLowerCase().includes(searchLower)) ?? false)
     );
+  }).sort((a, b) => {
+    // Sort alphabetically by first name, then by last name if first names are equal
+    const firstNameComparison = a.firstName.localeCompare(b.firstName);
+    if (firstNameComparison !== 0) {
+      return firstNameComparison;
+    }
+    // If first names are equal, sort by last name
+    return a.lastName.localeCompare(b.lastName);
   });
 
   // Component to render individual profile cards
@@ -262,6 +287,23 @@ export default function ProfilesScreen() {
     );
   };
 
+  // Handle refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Error refreshing profiles:', error);
+      Alert.alert(
+        "Error",
+        "Failed to refresh profiles. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Main render function for the entire component
   return (
     // LinearGradient provides a smooth color transition for the background
@@ -368,12 +410,12 @@ export default function ProfilesScreen() {
         // Show error message if profile loading failed
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Error loading profiles</Text>
-          <Pressable style={styles.retryButton} onPress={refetch}>
+          <Pressable style={styles.retryButton} onPress={onRefresh}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </Pressable>
         </View>
       ) : (
-        // If profiles loaded successfully, display them in a scrollable list
+        // If profiles loaded successfully, display them in a scrollable list with pull-to-refresh
         <FlatList
           onLayout={logLayout('FlatList')}
           data={filteredProfiles}
@@ -383,6 +425,17 @@ export default function ProfilesScreen() {
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
           alwaysBounceVertical={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#437C79', '#77B8B6']}
+              tintColor="#437C79"
+              title="Refreshing profiles..."
+              titleColor="#437C79"
+              progressBackgroundColor="#FFFFFF"
+            />
+          }
         />
       )}
 
