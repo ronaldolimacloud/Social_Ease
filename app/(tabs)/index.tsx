@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 
 /**
  * Home screen component - Main landing page of the app
@@ -8,6 +10,32 @@ import { LinearGradient } from 'expo-linear-gradient';
  */
 export default function HomeScreen() {
   const { user } = useAuthenticator();
+  const [firstName, setFirstName] = useState<string>('there');
+  
+  // Try to fetch user attributes directly from Cognito
+  useEffect(() => {
+    async function getUserAttributes() {
+      try {
+        // Try to get attributes directly from Cognito
+        const attributes = await fetchUserAttributes();
+        if (attributes.given_name) {
+          setFirstName(attributes.given_name);
+          return;
+        }
+        
+        // Fallback to user object
+        if (user?.username) {
+          setFirstName(user.username.includes('@') 
+            ? user.username.split('@')[0] 
+            : user.username);
+        }
+      } catch (error) {
+        console.log('Error fetching user attributes:', error);
+      }
+    }
+    
+    getUserAttributes();
+  }, [user]);
   
   return (
     <LinearGradient
@@ -21,7 +49,7 @@ export default function HomeScreen() {
       <View style={styles.content}>
         {/* Personalized greeting for the logged-in user */}
         <Text style={styles.greeting}>
-          Hello, {user?.username ? user.username.split('@')[0] : 'there'}!
+          Hello, {firstName}!
         </Text>
         
         {/* Main heading text - white color for emphasis */}

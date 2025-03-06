@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal,
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { BlurView } from 'expo-blur';
 import { useProfile } from '../lib/hooks/useProfile';
 import { useGroup } from '../lib/hooks/useGroup';
 
@@ -41,6 +42,9 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
   const [loadingGroups, setLoadingGroups] = useState(false);
   const { createProfile, loading, error } = useProfile();
   const { listGroups } = useGroup();
+
+  // Add keyboard visibility state
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Fetch available groups when the component mounts or when the modal is opened
   useEffect(() => {
@@ -236,172 +240,210 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
     onClose();
   };
 
+  // Add keyboard listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setIsKeyboardVisible(true);
+        // Scroll to the bottom to ensure the save button is visible
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    // Clean up listeners
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  // Add function to dismiss keyboard and save
+  const handleSaveWithKeyboardDismiss = () => {
+    Keyboard.dismiss();
+    handleSave();
+  };
+
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={handleCancel}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+      <BlurView 
+        intensity={50} 
+        tint="dark" 
+        style={styles.blurContainer}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create New Profile</Text>
               <Pressable 
                 onPress={handleCancel}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+                <Ionicons name="close" size={24} color="#437C79" />
               </Pressable>
             </View>
 
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={{ flex: 1 }}
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: isKeyboardVisible ? 120 : 20 }
+              ]}
+              keyboardShouldPersistTaps="handled"
             >
-              <ScrollView
-                ref={scrollViewRef}
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
-              >
-                {/* Photo Selection */}
-                <View style={styles.photoContainer}>
-                  <Image 
-                    source={{ uri: photoUri || DEFAULT_PHOTO }} 
-                    style={styles.photo}
-                  />
-                  <Pressable
-                    onPress={handleSelectPhoto}
-                    style={styles.photoButton}
-                  >
-                    <Text style={styles.photoButtonText}>
-                      {photoUri ? 'Change Photo' : 'Select Photo'}
-                    </Text>
-                  </Pressable>
-                </View>
+              {/* Photo Selection */}
+              <View style={styles.photoContainer}>
+                <Image 
+                  source={{ uri: photoUri || DEFAULT_PHOTO }} 
+                  style={styles.photo}
+                />
+                <Pressable
+                  onPress={handleSelectPhoto}
+                  style={styles.photoButton}
+                >
+                  <Text style={styles.photoButtonText}>
+                    {photoUri ? 'Change Photo' : 'Select Photo'}
+                  </Text>
+                </Pressable>
+              </View>
 
-                {/* Basic Information */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>First Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    placeholder="Enter first name"
-                    placeholderTextColor="#999"
-                  />
-                </View>
+              {/* Basic Information */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>First Name <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  
+                  placeholderTextColor="#77B8B6"
+                />
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Last Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={lastName}
-                    onChangeText={setLastName}
-                    placeholder="Enter last name"
-                    placeholderTextColor="#999"
-                  />
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Last Name <Text style={styles.required}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  
+                  placeholderTextColor="#77B8B6"
+                />
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Description</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={description}
-                    onChangeText={setDescription}
-                    placeholder="Brief description (e.g., role, profession)"
-                    placeholderTextColor="#999"
-                  />
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={styles.input}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Brief description..."
+                  placeholderTextColor="#77B8B6"
+                />
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Bio</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={bio}
-                    onChangeText={setBio}
-                    placeholder="Tell us about this person..."
-                    placeholderTextColor="#999"
-                    multiline
-                    numberOfLines={4}
-                  />
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Bio</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Tell us about this person..."
+                  placeholderTextColor="#77B8B6"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
 
-                {/* Groups Selection */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Groups</Text>
-                  <Pressable
-                    style={styles.groupButton}
-                    onPress={() => setShowGroupModal(true)}
-                  >
-                    <Text style={styles.groupButtonText}>
-                      {selectedGroups.length > 0
-                        ? `${selectedGroups.length} Group${selectedGroups.length > 1 ? 's' : ''} Selected`
-                        : 'Select Groups'}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#437C79" />
-                  </Pressable>
-                  {selectedGroups.length > 0 && (
-                    <View style={styles.selectedGroupsList}>
-                      {selectedGroups.map(group => (
-                        <View key={group.id} style={styles.selectedGroupItem}>
-                          <Text style={styles.selectedGroupText}>{group.name}</Text>
-                          <Pressable
-                            onPress={() => handleToggleGroup(group)}
-                            style={styles.removeGroupButton}
-                          >
-                            <Ionicons name="close-circle" size={16} color="#666" />
-                          </Pressable>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                {/* Insights Section */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Insights & Notes</Text>
-                  <View style={styles.insightsContainer}>
-                    {insights.map(insight => (
-                      <View key={insight.id} style={styles.insightItem}>
-                        <Text style={styles.insightText}>{insight.text}</Text>
+              {/* Groups Selection */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Groups</Text>
+                <Pressable
+                  style={styles.groupButton}
+                  onPress={() => setShowGroupModal(true)}
+                >
+                  <Text style={styles.groupButtonText}>
+                    {selectedGroups.length > 0
+                      ? `${selectedGroups.length} Group${selectedGroups.length > 1 ? 's' : ''} Selected`
+                      : 'Select Groups'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="#437C79" />
+                </Pressable>
+                {selectedGroups.length > 0 && (
+                  <View style={styles.selectedGroupsList}>
+                    {selectedGroups.map(group => (
+                      <View key={group.id} style={styles.selectedGroupItem}>
+                        <Text style={styles.selectedGroupText}>{group.name}</Text>
                         <Pressable
-                          onPress={() => handleRemoveInsight(insight.id)}
-                          style={styles.removeInsightButton}
+                          onPress={() => handleToggleGroup(group)}
+                          style={styles.removeGroupButton}
                         >
                           <Ionicons name="close-circle" size={16} color="#666" />
                         </Pressable>
                       </View>
                     ))}
-                    <View style={styles.addInsightContainer}>
-                      <TextInput
-                        style={styles.insightInput}
-                        value={newInsight}
-                        onChangeText={setNewInsight}
-                        placeholder="Add a note or insight..."
-                        placeholderTextColor="#999"
-                        multiline
-                      />
+                  </View>
+                )}
+              </View>
+
+              {/* Insights Section */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Insights & Notes</Text>
+                <View style={styles.insightsContainer}>
+                  {insights.map(insight => (
+                    <View key={insight.id} style={styles.insightItem}>
+                      <Text style={styles.insightText}>{insight.text}</Text>
                       <Pressable
-                        onPress={handleAddInsight}
-                        style={styles.addInsightButton}
-                        disabled={newInsight.trim() === ''}
+                        onPress={() => handleRemoveInsight(insight.id)}
+                        style={styles.removeInsightButton}
                       >
-                        <Ionicons
-                          name="add-circle"
-                          size={24}
-                          color={newInsight.trim() === '' ? '#CCC' : '#437C79'}
-                        />
+                        <Ionicons name="close-circle" size={16} color="#666" />
                       </Pressable>
                     </View>
+                  ))}
+                  <View style={styles.addInsightContainer}>
+                    <TextInput
+                      style={styles.insightInput}
+                      value={newInsight}
+                      onChangeText={setNewInsight}
+                      placeholder="Add a note or insight..."
+                      placeholderTextColor="#77B8B6"
+                      multiline
+                    />
+                    <Pressable
+                      onPress={handleAddInsight}
+                      style={styles.addInsightButton}
+                      disabled={newInsight.trim() === ''}
+                    >
+                      <Ionicons
+                        name="add-circle"
+                        size={24}
+                        color={newInsight.trim() === '' ? '#CCC' : '#437C79'}
+                      />
+                    </Pressable>
                   </View>
                 </View>
+              </View>
 
-                {/* Save Button */}
+              {/* Save Button */}
+              <View style={styles.modalFooter}>
                 <Pressable
                   style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-                  onPress={handleSave}
+                  onPress={handleSaveWithKeyboardDismiss}
                   disabled={loading}
                 >
                   {loading ? (
@@ -410,107 +452,136 @@ export default function ProfileModal({ visible, onClose }: ProfileModalProps) {
                     <Text style={styles.saveButtonText}>Save Profile</Text>
                   )}
                 </Pressable>
-              </ScrollView>
-            </KeyboardAvoidingView>
-
-            {/* Group Selection Modal */}
-            <Modal
-              visible={showGroupModal}
-              animationType="slide"
-              transparent={true}
-              onRequestClose={() => setShowGroupModal(false)}
-            >
-              <View style={styles.groupModalContainer}>
-                <View style={styles.groupModalContent}>
-                  <View style={styles.groupModalHeader}>
-                    <Text style={styles.groupModalTitle}>Select Groups</Text>
-                    <Pressable 
-                      onPress={() => setShowGroupModal(false)}
-                      style={styles.groupModalClose}
-                    >
-                      <Ionicons name="close" size={24} color="#666666" />
-                    </Pressable>
-                  </View>
-
-                  {loadingGroups ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color="#007AFF" />
-                      <Text style={styles.loadingText}>Loading groups...</Text>
-                    </View>
-                  ) : (
-                    <ScrollView style={styles.groupList}>
-                      {availableGroups.length === 0 ? (
-                        <Text style={styles.noGroupsText}>No groups available. Create groups first.</Text>
-                      ) : (
-                        availableGroups.map(group => {
-                          const isSelected = selectedGroups.some(g => g.id === group.id);
-                          return (
-                            <Pressable
-                              key={group.id}
-                              style={[styles.groupItem, isSelected && styles.groupItemSelected]}
-                              onPress={() => handleToggleGroup(group)}
-                            >
-                              <Text style={[styles.groupItemText, isSelected && styles.groupItemTextSelected]}>
-                                {group.name}
-                              </Text>
-                              {isSelected && (
-                                <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
-                              )}
-                            </Pressable>
-                          );
-                        })
-                      )}
-                    </ScrollView>
-                  )}
-
-                  <Pressable
-                    style={styles.groupModalDoneButton}
-                    onPress={() => setShowGroupModal(false)}
-                  >
-                    <Text style={styles.groupModalDoneButtonText}>Done</Text>
-                  </Pressable>
-                </View>
               </View>
-            </Modal>
+            </ScrollView>
+
+            {/* Floating keyboard dismiss button - only show when keyboard is visible */}
+            {isKeyboardVisible && (
+              <Pressable 
+                style={styles.keyboardDismissButton}
+                onPress={() => Keyboard.dismiss()}
+              >
+                <Ionicons name="chevron-down" size={24} color="#FFFFFF" />
+              </Pressable>
+            )}
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </BlurView>
+
+      {/* Group Selection Modal */}
+      <Modal
+        visible={showGroupModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGroupModal(false)}
+      >
+        <BlurView 
+          intensity={50} 
+          tint="dark" 
+          style={styles.blurContainer}
+        >
+          <View style={styles.groupModalContainer}>
+            <View style={styles.groupModalContent}>
+              <View style={styles.groupModalHeader}>
+                <Text style={styles.groupModalTitle}>Select Groups</Text>
+                <Pressable 
+                  onPress={() => setShowGroupModal(false)}
+                  style={styles.groupModalClose}
+                >
+                  <Ionicons name="close" size={24} color="#437C79" />
+                </Pressable>
+              </View>
+
+              {loadingGroups ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#437C79" />
+                  <Text style={styles.loadingText}>Loading groups...</Text>
+                </View>
+              ) : (
+                <ScrollView style={styles.groupList}>
+                  {availableGroups.length === 0 ? (
+                    <Text style={styles.noGroupsText}>No groups available. Create groups first.</Text>
+                  ) : (
+                    availableGroups.map(group => {
+                      const isSelected = selectedGroups.some(g => g.id === group.id);
+                      return (
+                        <Pressable
+                          key={group.id}
+                          style={[styles.groupItem, isSelected && styles.groupItemSelected]}
+                          onPress={() => handleToggleGroup(group)}
+                        >
+                          <Text style={[styles.groupItemText, isSelected && styles.groupItemTextSelected]}>
+                            {group.name}
+                          </Text>
+                          {isSelected && (
+                            <Ionicons name="checkmark-circle" size={20} color="#437C79" />
+                          )}
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </ScrollView>
+              )}
+
+              <View style={styles.modalFooter}>
+                <Pressable
+                  style={styles.saveButton}
+                  onPress={() => setShowGroupModal(false)}
+                >
+                  <Text style={styles.saveButtonText}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </BlurView>
+      </Modal>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  // Updated styles to match group creation modal
+  blurContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    width: '90%',
-    height: '90%',
-    backgroundColor: '#FFFFFF',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'rgba(144, 202, 199, 0.1)',
     borderRadius: 12,
-    overflow: 'hidden',
+    padding: 20,
+    width: '90%',
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
   },
   modalHeader: {
-    backgroundColor: '#437C79',
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   modalTitle: {
+    fontSize: 14,
+    fontWeight: '500',
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
   },
   closeButton: {
-    padding: 8,
+    padding: 4,
   },
   scrollContent: {
-    padding: 16,
+    paddingBottom: 20,
   },
   photoContainer: {
     alignItems: 'center',
@@ -521,6 +592,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 8,
+    backgroundColor: '#A6DDDC',
   },
   photoButton: {
     paddingVertical: 8,
@@ -538,15 +610,22 @@ const styles = StyleSheet.create({
   inputLabel: {
     marginBottom: 4,
     fontWeight: '500',
-    color: '#333',
+    color: '#FFFFFF',
+    fontSize: 12,
+  },
+  required: {
+    color: '#E74C3C',
+    marginLeft: 5,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    fontSize: 16,
+    fontSize: 12,
+    borderWidth: 1,
+    borderColor: '#A6DDDC',
+    color: '#437C79',
   },
   textArea: {
     height: 100,
@@ -556,11 +635,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#DDD',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#A6DDDC',
   },
   groupButtonText: {
     color: '#437C79',
@@ -582,7 +662,7 @@ const styles = StyleSheet.create({
   },
   selectedGroupText: {
     color: '#437C79',
-    fontSize: 14,
+    fontSize: 12,
     marginRight: 4,
   },
   removeGroupButton: {
@@ -610,46 +690,76 @@ const styles = StyleSheet.create({
   addInsightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: '#A6DDDC',
     borderRadius: 8,
     paddingHorizontal: 12,
   },
   insightInput: {
     flex: 1,
     paddingVertical: 8,
-    fontSize: 16,
+    fontSize: 12,
+    color: '#437C79',
   },
   addInsightButton: {
     padding: 4,
   },
-  saveButton: {
-    backgroundColor: '#437C79',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 24,
   },
+  saveButton: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#437C79',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   saveButtonDisabled: {
-    backgroundColor: '#A0CCC9',
+    backgroundColor: 'rgba(144, 202, 199, 0.5)',
   },
   saveButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
-  groupModalContainer: {
-    flex: 1,
+  keyboardDismissButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#437C79',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    zIndex: 100,
+  },
+  
+  // Group modal styles
+  groupModalContainer: {
+    width: '90%',
+    maxHeight: '70%',
   },
   groupModalContent: {
-    width: '80%',
-    maxHeight: '70%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(144, 202, 199, 0.1)',
     borderRadius: 12,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
   },
   groupModalHeader: {
     flexDirection: 'row',
@@ -657,12 +767,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   groupModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
   groupModalClose: {
     padding: 4,
@@ -673,46 +783,36 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: '#666',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 12,
   },
   groupList: {
     maxHeight: 300,
+    padding: 16,
   },
   noGroupsText: {
     padding: 16,
     textAlign: 'center',
-    color: '#666',
+    color: '#FFFFFF',
   },
   groupItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 8,
   },
   groupItemSelected: {
     backgroundColor: '#E8F4F4',
   },
   groupItemText: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#333',
   },
   groupItemTextSelected: {
     color: '#437C79',
     fontWeight: '500',
-  },
-  groupModalDoneButton: {
-    backgroundColor: '#437C79',
-    padding: 12,
-    alignItems: 'center',
-    margin: 16,
-    borderRadius: 8,
-  },
-  groupModalDoneButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
   },
 }); 

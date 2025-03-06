@@ -1,7 +1,8 @@
-import { View, StyleSheet, ImageBackground, Text, Image } from 'react-native';
+import { View, StyleSheet, Text, Image } from 'react-native';
 import { Authenticator, useAuthenticator, ThemeProvider } from '@aws-amplify/ui-react-native';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Define a custom theme that matches your app's colors
 const theme = {
@@ -73,10 +74,12 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground
-        source={require('../assets/images/bg-blur-light.png')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+      <LinearGradient
+        colors={['#061a1a', '#020e0e']}
+        style={styles.backgroundGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        locations={[0.5, 1]}
       >
         <ThemeProvider theme={theme}>
           <Authenticator.Provider>
@@ -98,7 +101,7 @@ export default function AuthScreen() {
             />
           </Authenticator.Provider>
         </ThemeProvider>
-      </ImageBackground>
+      </LinearGradient>
     </View>
   );
 }
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backgroundImage: {
+  backgroundGradient: {
     flex: 1,
     width: '100%',
     height: '100%',

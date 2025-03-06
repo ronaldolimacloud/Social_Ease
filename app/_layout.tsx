@@ -24,7 +24,7 @@ function AuthWrapper() {
 
     if (authStatus !== 'authenticated' && !isAuthRoute) {
       // Redirect to the auth screen if not authenticated
-      router.replace('/auth');
+      router.replace('/start');
     } else if (authStatus === 'authenticated' && isAuthRoute) {
       // Redirect to the main app when authenticated
       router.replace('/(tabs)');

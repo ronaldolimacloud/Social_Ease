@@ -21,6 +21,7 @@ export default function CreateScreen() {
         onSearchChange={() => {}}
       />
       <View style={styles.options}>
+        {/* 
         <Link href="/profile/new" asChild>
           <Pressable style={styles.option}>
             <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
@@ -36,6 +37,7 @@ export default function CreateScreen() {
             </View>
           </Pressable>
         </Link>
+        */}
       </View>
     </LinearGradient>
   );

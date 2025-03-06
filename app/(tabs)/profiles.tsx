@@ -347,24 +347,6 @@ export default function ProfilesScreen() {
             <Text style={styles.actionCardText}>Create Profile</Text>
           </LinearGradient>
         </Pressable>
-        
-        {/* Touchable card for creating a new group */}
-        <Pressable 
-          style={styles.actionCardBase}
-        >
-          <LinearGradient
-            colors={['#092121', '#153434']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.actionCard}
-          >
-            {/* Icon container */}
-            <View style={styles.actionCardIcon}>
-              <Ionicons name="people" size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.actionCardText}>Create Group</Text>
-          </LinearGradient>
-        </Pressable>
       </View>
 
       {/* Scrollable horizontal container */}
@@ -435,6 +417,12 @@ export default function ProfilesScreen() {
               titleColor="#437C79"
               progressBackgroundColor="#FFFFFF"
             />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No profiles found</Text>
+              <Text style={styles.emptySubText}>Create a new profile to get started</Text>
+            </View>
           }
         />
       )}
@@ -673,5 +661,23 @@ const styles = StyleSheet.create({
     fontSize: 12, // Small text size
     color: '#437C79', // Teal text color
     marginLeft: 4, // Space to the left
+  },
+  // Empty state styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubText: {
+    color: '#FFFFFF',
+    opacity: 0.7,
+    textAlign: 'center',
   },
 });
