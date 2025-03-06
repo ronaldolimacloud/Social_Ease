@@ -33,6 +33,12 @@ const theme = {
         },
         input: {
           color: '#FFFFFF',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+        },
+        button: {
+          backgroundColor: '#2b504a',
+          color: '#FFFFFF',
         },
       },
     },
@@ -65,7 +71,7 @@ export default function AuthScreen() {
     <View style={styles.headerContainer}>
       <Image 
         source={require('../assets/images/logo.png')} 
-        style={styles.logo} 
+        style={styles.logoSmall} 
         resizeMode="contain"
       />
       <Text style={styles.headerText}>Create an Account</Text>
@@ -122,13 +128,17 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#345f58',
+    color: '#FFFF',
     marginTop: 10,
   },
   logo: {
     width: 150,
     height: 150,
+  },
+  logoSmall: {
+    width: 100,
+    height: 100,
   },
 }); 
