@@ -1,11 +1,11 @@
-import React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { LinearGradient } from 'expo-linear-gradient';
+import { refreshImageUrl } from '../../lib/utils';
 
 /**
  * Interface defining the structure of an insight/note about a person
@@ -26,6 +26,7 @@ type Profile = {
   description: string;
   bio: string;
   photoUrl: string;
+  photoKey?: string;
   insights: Insight[];
   groups: Array<{
     id: string;
@@ -49,6 +50,7 @@ export default function ProfileScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // Custom hook for profile data operations
   const { getProfile, updateProfile } = useProfile();
+  const [refreshedPhotoUrl, setRefreshedPhotoUrl] = useState<string>('');
 
   /**
    * Fetches profile data from the backend
@@ -78,6 +80,20 @@ export default function ProfileScreen() {
       return () => {}; // cleanup function
     }, [id])
   );
+
+  // Add a function to refresh the image URL
+  useEffect(() => {
+    if (profile?.photoUrl && profile.photoKey) {
+      refreshImageUrl(profile.photoKey, profile.photoUrl)
+        .then(url => {
+          setRefreshedPhotoUrl(url);
+        })
+        .catch(error => {
+          console.error('Error refreshing profile image URL:', error);
+          setRefreshedPhotoUrl(profile.photoUrl); // Fallback to stored URL
+        });
+    }
+  }, [profile?.photoUrl, profile?.photoKey]);
 
   /**
    * Handles profile photo selection and update
@@ -294,9 +310,11 @@ export default function ProfileScreen() {
             >
               <Image 
                 source={{ 
-                  uri: profile.photoUrl && profile.photoUrl.trim() !== '' 
-                    ? profile.photoUrl 
-                    : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
+                  uri: (refreshedPhotoUrl && refreshedPhotoUrl.trim() !== '') 
+                    ? refreshedPhotoUrl 
+                    : (profile.photoUrl && profile.photoUrl.trim() !== '') 
+                      ? profile.photoUrl 
+                      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop'
                 }} 
                 style={styles.photo} 
               />

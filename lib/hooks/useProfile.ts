@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { client } from '../amplify';
 import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
 import { handleError, clearError } from '../utils';
 
@@ -16,25 +16,28 @@ export const useProfile = () => {
       // Get the current user's identity ID for entity-based access control
       let entityId = '';
       try {
-        const currentUser = await getCurrentUser();
-        entityId = currentUser.userId;
-        console.log('Got userId for storage path:', entityId);
+        const { identityId } = await fetchAuthSession();
+        if (!identityId) {
+          throw new Error('No identity ID returned from authentication session');
+        }
+        entityId = identityId;
+        console.log('Got identityId for storage path:', entityId);
       } catch (authErr) {
-        console.error('Error getting current user identity:', authErr);
-        throw new Error('Failed to get user identity for storage. Are you logged in?');
+        console.error('Error getting identity ID:', authErr);
+        throw new Error('Failed to get identity ID for storage. Are you logged in?');
       }
       
       if (!entityId) {
-        console.error('No entity ID found. User may not be authenticated properly.');
-        throw new Error('No entity ID found. Please log out and log back in.');
+        console.error('No identity ID found. User may not be authenticated properly.');
+        throw new Error('No identity ID found. Please log out and log back in.');
       }
       
-      // Use correct path structure that matches the storage configuration
-      // profiles/{entity_id}/filename - must exactly match the pattern in storage/resource.ts
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const key = `profiles/${entityId}/${filename}`;
+      // Using private storage level already includes the /private/{identityId}/ prefix
+      // So we only need to specify a filename without the profiles/{entityId} path
+      // This follows AWS best practices by using the built-in private storage with identity isolation
+      const filename = `profile-photo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       
-      console.log(`Uploading to key: ${key}`);
+      console.log(`Uploading to private storage with key: ${filename}`);
       
       try {
         // Convert file URI to blob data
@@ -60,21 +63,37 @@ export const useProfile = () => {
           throw new Error('Unsupported image format. Only file:// URIs are supported.');
         }
         
-        // Upload the file data to S3
+        // Upload the file data to S3 using private access level
+        // This automatically handles the /private/{identityId}/ prefix
         const uploadResult = await uploadData({
-          key,
+          key: filename,
           data: fileData,
           options: {
             contentType: 'image/jpeg',
-            accessLevel: 'private'
+            accessLevel: 'private',
+            // Use metadata for additional security instead of unsupported options
+            metadata: {
+              'x-amz-server-side-encryption': 'AES256'
+            },
+            contentDisposition: 'attachment; filename="profile-photo.jpg"'
           }
         }).result;
         
         console.log('Upload successful, getting URL');
-        const { url } = await getUrl({ key });
+        // Get the URL with private access level to match
+        const { url } = await getUrl({ 
+          key: filename,
+          options: { 
+            accessLevel: 'private',
+            // Fix expires to expiresIn
+            expiresIn: 3600 // 1 hour expiration for signed URLs
+          }
+        });
         console.log('Photo uploaded successfully with URL:', url.toString());
         
-        return { url: url.toString(), key };
+        // Store the full key including private prefix for consistent retrieval
+        const fullKey = `private/${entityId}/${filename}`;
+        return { url: url.toString(), key: fullKey };
       } catch (uploadErr) {
         console.error('Error during S3 upload:', uploadErr);
         if (uploadErr instanceof Error && uploadErr.message.includes('credentials')) {
@@ -232,6 +251,25 @@ export const useProfile = () => {
             // Update local profile object
             profile.photoKey = migrationResult.key;
             profile.photoUrl = migrationResult.url;
+          }
+        }
+        
+        // Always refresh the photo URL if a photoKey exists
+        // This ensures we always use fresh signed URLs that haven't expired
+        if (profile.photoKey) {
+          try {
+            console.log('Refreshing photo URL for key:', profile.photoKey);
+            const { url } = await getUrl({ 
+              key: profile.photoKey,
+              options: { 
+                accessLevel: 'private' 
+              }
+            });
+            profile.photoUrl = url.toString();
+            console.log('Updated photo URL:', profile.photoUrl);
+          } catch (photoError) {
+            console.error('Error refreshing photo URL:', photoError);
+            // Continue with possibly stale URL if refresh fails
           }
         }
         
