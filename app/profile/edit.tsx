@@ -1,6 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -306,12 +307,19 @@ export default function EditProfileScreen() {
             <Image 
               source={
                 photoUri && photoUri.trim() !== '' 
-                  ? { uri: photoUri } 
+                  ? { uri: photoUri }
                   : profile.photoUrl && profile.photoUrl.trim() !== '' 
-                    ? { uri: profile.photoUrl } 
+                    ? { uri: profile.photoUrl }
                     : DEFAULT_PROFILE_IMAGE
               } 
-              style={styles.photo} 
+              style={styles.photo}
+              contentFit="cover"
+              transition={{
+                duration: 400,
+                effect: 'cross-dissolve'
+              }}
+              placeholder={DEFAULT_PROFILE_IMAGE}
+              cachePolicy="memory-disk"
             />
             <View style={styles.editPhotoButton}>
               {uploadingPhoto ? (

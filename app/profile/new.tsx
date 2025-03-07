@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, findNodeHandle, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, findNodeHandle, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -213,6 +214,13 @@ export default function NewProfileScreen() {
                   <Image 
                     source={photoUri ? { uri: photoUri } : DEFAULT_PROFILE_IMAGE} 
                     style={styles.photo}
+                    contentFit="cover"
+                    transition={{
+                      duration: 400,
+                      effect: 'cross-dissolve'
+                    }}
+                    placeholder={DEFAULT_PROFILE_IMAGE}
+                    cachePolicy="memory-disk"
                   />
                   <Pressable
                     style={styles.editPhotoButton}

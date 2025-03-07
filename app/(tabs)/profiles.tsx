@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, Pressable, LayoutChangeEvent, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -142,7 +143,14 @@ export default function ProfilesScreen() {
                 ? { uri: item.photoUrl }
                 : DEFAULT_PROFILE_IMAGE
             } 
-            style={styles.profileGridImage} 
+            style={styles.profileGridImage}
+            contentFit="cover"
+            transition={{
+              duration: 400,
+              effect: 'cross-dissolve'
+            }}
+            placeholder={DEFAULT_PROFILE_IMAGE}
+            cachePolicy="memory-disk"
           />
           {/* Text overlay on the image */}
           <LinearGradient

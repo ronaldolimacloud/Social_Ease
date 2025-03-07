@@ -1,4 +1,5 @@
-import { View, StyleSheet, Text, Image } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { Authenticator, useAuthenticator, ThemeProvider } from '@aws-amplify/ui-react-native';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
@@ -60,8 +61,13 @@ export default function AuthScreen() {
     <View style={styles.headerContainer}>
       <Image 
         source={require('../assets/images/logo.png')} 
-        style={styles.logo} 
-        resizeMode="contain"
+        style={styles.logo}
+        contentFit="contain"
+        transition={{
+          duration: 300,
+          effect: 'cross-dissolve'
+        }}
+        cachePolicy="memory"
       />
       <Text style={styles.headerText}></Text>
     </View>
@@ -71,8 +77,13 @@ export default function AuthScreen() {
     <View style={styles.headerContainer}>
       <Image 
         source={require('../assets/images/logo.png')} 
-        style={styles.logoSmall} 
-        resizeMode="contain"
+        style={styles.logo}
+        contentFit="contain"
+        transition={{
+          duration: 300,
+          effect: 'cross-dissolve'
+        }}
+        cachePolicy="memory"
       />
       <Text style={styles.headerText}>Create an Account</Text>
     </View>

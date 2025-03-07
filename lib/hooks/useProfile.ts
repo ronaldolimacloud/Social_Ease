@@ -8,9 +8,6 @@ import { generateClient } from 'aws-amplify/data';
 import { Schema } from '@/amplify/data/resource';
 import { Alert } from 'react-native';
 import { Dispatch, SetStateAction } from 'react';
-import { handleError as newHandleError, getErrorMessage } from '../errorHandling';
-import { PROFILE_PHOTOS_PREFIX } from '../constants';
-import { randomUUID } from 'expo-crypto';
 
 // Import the default profile image
 const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
@@ -42,9 +39,7 @@ export const useProfile = () => {
         throw new Error('No identity ID found. Please log out and log back in.');
       }
       
-      // Using private storage level already includes the /private/{identityId}/ prefix
-      // So we only need to specify a filename without the profiles/{entityId} path
-      // This follows AWS best practices by using the built-in private storage with identity isolation
+      // Generate a unique filename without any path information
       const filename = `profile-photo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       
       console.log(`Uploading to private storage with key: ${filename}`);
@@ -74,14 +69,12 @@ export const useProfile = () => {
         }
         
         // Upload the file data to S3 using private access level
-        // This automatically handles the /private/{identityId}/ prefix
         const uploadResult = await uploadData({
-          key: filename,
+          key: filename,  // Just the filename, no path
           data: fileData,
           options: {
             contentType: 'image/jpeg',
-            accessLevel: 'private',
-            // Use metadata for additional security instead of unsupported options
+            accessLevel: 'private',  // This tells Amplify to use private/{identityId}/ prefix
             metadata: {
               'x-amz-server-side-encryption': 'AES256'
             },
@@ -92,18 +85,16 @@ export const useProfile = () => {
         console.log('Upload successful, getting URL');
         // Get the URL with private access level to match
         const { url } = await getUrl({ 
-          key: filename,
+          key: filename,  // Just the filename
           options: { 
             accessLevel: 'private',
-            // Fix expires to expiresIn
             expiresIn: 3600 // 1 hour expiration for signed URLs
           }
         });
         console.log('Photo uploaded successfully with URL:', url.toString());
         
-        // Store the full key including private prefix for consistent retrieval
-        const fullKey = `private/${entityId}/${filename}`;
-        return { url: url.toString(), key: fullKey };
+        // Return just the filename - Amplify will handle the private/{identityId}/ prefixing
+        return { url: url.toString(), key: filename };
       } catch (uploadErr) {
         console.error('Error during S3 upload:', uploadErr);
         if (uploadErr instanceof Error && uploadErr.message.includes('credentials')) {
@@ -464,7 +455,11 @@ export const useProfile = () => {
         // Delete photo if exists
         if (profile.photoKey) {
           try {
-            await removeStorage({ key: profile.photoKey });
+            // Use just the filename with accessLevel: 'private'
+            await removeStorage({ 
+              key: profile.photoKey,
+              options: { accessLevel: 'private' }
+            });
           } catch (error) {
             console.warn('Failed to delete profile photo:', error);
           }
@@ -545,4 +540,50 @@ export const useProfile = () => {
     error,
     clearError: () => clearError(setError),
   };
+};
+
+export const refreshImageUrl = async (photoKey: string | null | undefined, existingUrl?: string): Promise<string> => {
+  if (!photoKey) {
+    return existingUrl || '';
+  }
+  
+  try {
+    // For private storage keys, we only need the filename part
+    let key = photoKey;
+    
+    // If the key includes the private/ prefix, extract just the filename
+    if (photoKey.startsWith('private/')) {
+      // The key format is private/{identityId}/{filename}
+      const parts = photoKey.split('/');
+      if (parts.length >= 3) {
+        // Get just the filename (last part)
+        key = parts[parts.length - 1];
+      }
+    }
+    
+    // Always use accessLevel: 'private' with just the filename
+    const { url } = await getUrl({ 
+      key,
+      options: { 
+        accessLevel: 'private',
+        expiresIn: 3600 // 1 hour expiration
+      }
+    });
+    return url.toString();
+  } catch (error) {
+    console.error('Error refreshing image URL:', error);
+    return existingUrl || '';
+  }
+};
+
+// Add this function to help migrate existing photos
+const getFilenameFromPath = (fullPath: string): string => {
+  if (!fullPath) return '';
+  
+  // If it's already just a filename (no slashes), return as is
+  if (!fullPath.includes('/')) return fullPath;
+  
+  // Otherwise extract the filename from the path
+  const parts = fullPath.split('/');
+  return parts[parts.length - 1];
 }; 
