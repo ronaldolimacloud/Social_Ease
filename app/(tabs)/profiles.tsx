@@ -344,6 +344,25 @@ export default function ProfilesScreen() {
             <Text style={styles.actionCardText}>Create Profile</Text>
           </LinearGradient>
         </Pressable>
+
+        {/* New Modal button */}
+        <Pressable 
+          onPress={() => router.push('/modal/modalino')}
+          style={styles.actionCardBase}
+        >
+          <LinearGradient
+            colors={['#092121', '#153434']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.actionCard}
+          >
+            {/* Icon container */}
+            <View style={styles.actionCardIcon}>
+              <Ionicons name="apps" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionCardText}>Modal</Text>
+          </LinearGradient>
+        </Pressable>
       </View>
 
       {/* Scrollable horizontal container */}

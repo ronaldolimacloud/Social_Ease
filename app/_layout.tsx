@@ -6,8 +6,28 @@ import { Amplify } from 'aws-amplify';
 import outputs from '../amplify_outputs.json';
 import { useEffect } from 'react';
 
+
+
+
+
 // Configure Amplify with the generated AWS resources
 Amplify.configure(outputs);
+
+
+const App = () => {
+  return (
+    <Stack>
+          <Stack.Screen name="(tabs)" options={{presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="modal_profile"options={{presentation: 'modal',headerShown: false}}/>
+          <Stack.Screen name="modalino"options={{presentation: 'modal',headerShown: true}}/>
+          <Stack.Screen name="modal"options={{presentation: 'modal',
+            }}
+          />
+        </Stack>
+  );
+};
+
+
 
 // Authentication protection wrapper
 function AuthWrapper() {
@@ -34,13 +54,17 @@ function AuthWrapper() {
   return <Slot />;
 }
 
+
+
 export default function RootLayout() {
   return (
+    
     <SafeAreaProvider>
       <StatusBar style="dark" backgroundColor="#90cac7" />
       <Authenticator.Provider>
         <AuthWrapper />
       </Authenticator.Provider>
     </SafeAreaProvider>
+    
   );
 }

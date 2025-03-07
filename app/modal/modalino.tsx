@@ -1,8 +1,10 @@
-import { View, StyleSheet, Pressable, Text } from 'react-native';
-import { Link, } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View, } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Header from '../../components/Header';
+
+import { Link } from 'expo-router';
+
+
+
 
 export default function CreateScreen() {
   return (
@@ -16,14 +18,19 @@ export default function CreateScreen() {
     >
       
       <View style={styles.contentContainer}>
-        <Text style={styles.text}>test screen</Text>
-        <Link href="../modal/modal_profile" style={styles.link}>
-          Take me out of (tabs)
+        
+        <Text style={styles.text}>OOOOO HOW COOL!</Text>
+        <Text style={styles.text}>you can either swipe to close or press the button below</Text>
+        <Link href="../(tabs)/profiles" style={styles.link}>
+          Go back to Profiles
         </Link>
       </View>
     </LinearGradient>
   );
 }
+
+
+
 
 
 
@@ -40,7 +47,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 12,
   },
   link: {
     paddingTop: 20,
@@ -73,4 +80,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
