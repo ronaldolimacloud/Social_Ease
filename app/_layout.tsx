@@ -14,18 +14,8 @@ import { useEffect } from 'react';
 Amplify.configure(outputs);
 
 
-const App = () => {
-  return (
-    <Stack>
-          <Stack.Screen name="(tabs)" options={{presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="modal_profile"options={{presentation: 'modal',headerShown: false}}/>
-          <Stack.Screen name="modalino"options={{presentation: 'modal',headerShown: true}}/>
-          <Stack.Screen name="modal"options={{presentation: 'modal',
-            }}
-          />
-        </Stack>
-  );
-};
+
+
 
 
 

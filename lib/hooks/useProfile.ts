@@ -4,6 +4,7 @@ import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
 import { handleError, clearError } from '../utils';
+import { CLOUDFRONT_URL, getCloudFrontUrl, createCloudFrontKey } from '../utils/cloudfront';
 import { generateClient } from 'aws-amplify/data';
 import { Schema } from '@/amplify/data/resource';
 import { Alert } from 'react-native';
@@ -93,8 +94,14 @@ export const useProfile = () => {
         });
         console.log('Photo uploaded successfully with URL:', url.toString());
         
-        // Return just the filename - Amplify will handle the private/{identityId}/ prefixing
-        return { url: url.toString(), key: filename };
+        // Create the full S3 key path that includes the private/{identityId}/ prefix for CloudFront compatibility
+        const fullS3Key = createCloudFrontKey(filename, entityId);
+        
+        // Generate CloudFront URL for display
+        const cloudFrontUrl = getCloudFrontUrl(fullS3Key);
+        
+        // Return both the CloudFront URL for display and the full S3 key for storage
+        return { url: cloudFrontUrl, key: fullS3Key };
       } catch (uploadErr) {
         console.error('Error during S3 upload:', uploadErr);
         if (uploadErr instanceof Error && uploadErr.message.includes('credentials')) {
@@ -179,140 +186,76 @@ export const useProfile = () => {
     }
   };
 
-  const migratePhotoToEntityPath = async (oldKey: string) => {
-    try {
-      if (!oldKey.includes('/')) return null; // Invalid key format
-      
-      // Check if the key is already in the entity format
-      const parts = oldKey.split('/');
-      if (parts.length >= 3 && parts[0] === 'profiles') {
-        // Already in the right format (profiles/{entity_id}/filename)
-        return oldKey;
-      }
-      
-      // This is an old format key, we need to migrate it
-      const currentUser = await getCurrentUser();
-      const identityId = currentUser.userId;
-      
-      // Create a new key in the entity format
-      const filename = parts[parts.length - 1];
-      const newKey = `profiles/${identityId}/${filename}`;
-      
-      // Download the old file
-      const { url: oldUrl } = await getUrl({ key: oldKey });
-      const response = await fetch(oldUrl);
-      const blob = await response.blob();
-      
-      // Upload to the new location
-      await uploadData({
-        key: newKey,
-        data: blob,
-        options: {
-          contentType: blob.type
-        }
-      });
-      
-      // Get the URL of the new file
-      const { url: newUrl } = await getUrl({ key: newKey });
-      
-      // Try to delete the old file
-      try {
-        await removeStorage({ key: oldKey });
-      } catch (error) {
-        console.warn('Failed to delete old photo during migration:', error);
-      }
-      
-      return { key: newKey, url: newUrl.toString() };
-    } catch (error) {
-      console.error('Failed to migrate photo:', error);
-      return null;
-    }
-  };
-
   const getProfile = async (id: string, includeRelations = true) => {
     try {
       setLoading(true);
       setError(null);
       
       const profileResult = await client.models.Profile.get({ id });
-      const profile = profileResult.data;
+      let profile = profileResult.data;
       
-      if (profile) {
-        // Check if this profile has a photo that needs migration
-        if (profile.photoKey && !profile.photoKey.match(/^profiles\/[^/]+\/[^/]+$/)) {
-          const migrationResult = await migratePhotoToEntityPath(profile.photoKey);
-          if (migrationResult && typeof migrationResult !== 'string') {
-            // Update the profile with the new photo key and URL
-            await client.models.Profile.update({
-              id: profile.id,
-              photoKey: migrationResult.key,
-              photoUrl: migrationResult.url
-            });
-            
-            // Update local profile object
-            profile.photoKey = migrationResult.key;
-            profile.photoUrl = migrationResult.url;
-          }
-        }
+      // Only process if we have a profile
+      if (!profile) {
+        return profile;
+      }
+      
+      // If the profile has a photo key, ensure it has a CloudFront URL
+      if (profile.photoKey) {
+        profile = {
+          ...profile,
+          photoUrl: getCloudFrontUrl(profile.photoKey)
+        };
+      }
+      
+      // For Amplify Gen 2, relationships are functions, not direct arrays
+      // We need to return the original profile object with proper relationships
+      let extendedData = null;
+      
+      // Fetch relationships if needed
+      if (includeRelations) {
+        // Fetch insights
+        const insightsResult = await client.models.Insight.list({
+          filter: { profileID: { eq: id } }
+        });
         
-        // Always refresh the photo URL if a photoKey exists
-        // This ensures we always use fresh signed URLs that haven't expired
-        if (profile.photoKey) {
-          try {
-            console.log('Refreshing photo URL for key:', profile.photoKey);
-            const { url } = await getUrl({ 
-              key: profile.photoKey,
-              options: { 
-                accessLevel: 'private' 
-              }
-            });
-            profile.photoUrl = url.toString();
-            console.log('Updated photo URL:', profile.photoUrl);
-          } catch (photoError) {
-            console.error('Error refreshing photo URL:', photoError);
-            // Continue with possibly stale URL if refresh fails
-          }
-        }
+        // Fetch group memberships
+        const groupMembershipsResult = await client.models.ProfileGroup.list({
+          filter: { profileID: { eq: id } }
+        });
         
-        if (includeRelations) {
-          // Fetch insights
-          const insightsResult = await client.models.Insight.list({
-            filter: { profileID: { eq: profile.id } }
-          });
-
-          // Fetch group memberships
-          const groupMembershipsResult = await client.models.ProfileGroup.list({
-            filter: { profileID: { eq: profile.id } }
-          });
-
-          // If there are group memberships, fetch the actual groups
+        // If we have group memberships, fetch the actual group data
+        const groups: any[] = [];
+        if (groupMembershipsResult.data && groupMembershipsResult.data.length > 0) {
           const groupIds = groupMembershipsResult.data
-            ?.map(pg => pg.groupID)
-            .filter((id): id is string => id !== null) || [];
-            
-          const groupsPromises = groupIds.map(groupId =>
+            .map(membership => membership.groupID)
+            .filter((groupId): groupId is string => groupId !== null);
+          
+          // We need to fetch each group individually as Amplify Gen 2 doesn't support IN filter yet
+          const groupPromises = groupIds.map(groupId => 
             client.models.Group.get({ id: groupId })
           );
-          const groupsResults = await Promise.all(groupsPromises);
-
-          return {
-            ...profile,
-            insights: insightsResult.data || [],
-            groups: groupsResults.map(g => g.data).filter(Boolean) || []
-          };
+          
+          const groupsResults = await Promise.all(groupPromises);
+          groupsResults.forEach(result => {
+            if (result.data) {
+              groups.push(result.data);
+            }
+          });
         }
-      }
-
-      return profile;
-    } catch (err) {
-      // More detailed error logging
-      if (err instanceof Error) {
-        console.error(`Error in profile operation - Type: ${err.name}, Message: ${err.message}`);
-        if (err.stack) console.error(`Stack trace: ${err.stack}`);
+        
+        // Create extended data to help components render relations
+        // but we don't modify the original profile object's relationship functions
+        extendedData = {
+          insightsData: insightsResult.data || [],
+          groupsData: groups
+        };
       }
       
-      handleError(err, setError);
-      throw err;
+      // Return both the profile and any extended data
+      return { profile, extendedData };
+    } catch (error) {
+      handleError(error, setError);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -540,40 +483,6 @@ export const useProfile = () => {
     error,
     clearError: () => clearError(setError),
   };
-};
-
-export const refreshImageUrl = async (photoKey: string | null | undefined, existingUrl?: string): Promise<string> => {
-  if (!photoKey) {
-    return existingUrl || '';
-  }
-  
-  try {
-    // For private storage keys, we only need the filename part
-    let key = photoKey;
-    
-    // If the key includes the private/ prefix, extract just the filename
-    if (photoKey.startsWith('private/')) {
-      // The key format is private/{identityId}/{filename}
-      const parts = photoKey.split('/');
-      if (parts.length >= 3) {
-        // Get just the filename (last part)
-        key = parts[parts.length - 1];
-      }
-    }
-    
-    // Always use accessLevel: 'private' with just the filename
-    const { url } = await getUrl({ 
-      key,
-      options: { 
-        accessLevel: 'private',
-        expiresIn: 3600 // 1 hour expiration
-      }
-    });
-    return url.toString();
-  } catch (error) {
-    console.error('Error refreshing image URL:', error);
-    return existingUrl || '';
-  }
 };
 
 // Add this function to help migrate existing photos

@@ -90,22 +90,23 @@ export default function EditProfileScreen() {
     const fetchProfile = async () => {
       try {
         if (typeof id === 'string') {
-          const profileData = await getProfile(id, true);
+          const result = await getProfile(id, true);
           
-          // Make sure profileData has the expected shape
-          if (profileData) {
-            // Cast to any first to avoid type issues with complex structure
-            const data = profileData as any;
+          // Make sure result has the expected shape
+          if (result && result.profile) {
+            const profile = result.profile;
+            const extendedData = result.extendedData || { insightsData: [], groupsData: [] };
             
+            // Format the profile data with the extended data
             const formattedProfile: Profile = {
-              id: data.id || '',
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              description: data.description || '',
-              bio: data.bio || '',
-              photoUrl: data.photoUrl || '',
-              insights: Array.isArray(data.insights) ? data.insights : [],
-              groups: Array.isArray(data.groups) ? data.groups : []
+              id: profile.id || '',
+              firstName: profile.firstName || '',
+              lastName: profile.lastName || '',
+              description: profile.description || '',
+              bio: profile.bio || '',
+              photoUrl: profile.photoUrl || '',
+              insights: extendedData.insightsData || [],
+              groups: extendedData.groupsData || []
             };
             
             setProfile(formattedProfile);

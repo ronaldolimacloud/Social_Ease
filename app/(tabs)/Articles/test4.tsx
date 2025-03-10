@@ -19,7 +19,7 @@ export default function CreateScreen() {
       
       <View style={styles.contentContainer}>
         <Text style={styles.text}>Modal Test</Text>
-        <Link href="./modalino" style={styles.link}>
+        <Link href="./test3" style={styles.link}>
           Open modal
         </Link>
       </View>

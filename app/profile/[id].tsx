@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { LinearGradient } from 'expo-linear-gradient';
-import { refreshImageUrl } from '../../lib/utils';
+import { refreshImageUrl, getCloudFrontUrl } from '../../lib/utils';
+import { CLOUDFRONT_URL } from '../../lib/utils/cloudfront';
 import CustomAlert from '../../components/CustomAlert';
 
 // Import the logo directly
@@ -22,7 +23,7 @@ type Insight = {
 };
 
 /**
- * Interface defining the structure of a user profile
+ * Interface defining the structure of a profile
  */
 type Profile = {
   id: string;
@@ -30,10 +31,20 @@ type Profile = {
   lastName: string;
   description: string;
   bio: string;
-  photoUrl: string;
-  photoKey?: string;
-  insights: Insight[];
-  groups: Array<{
+  photoUrl: string | null;
+  photoKey?: string | null;
+  insights?: any;
+  groups?: any;
+};
+
+// Add a type for our extended data
+type ExtendedProfileData = {
+  insightsData: Array<{
+    id: string;
+    text: string;
+    timestamp: string;
+  }>;
+  groupsData: Array<{
     id: string;
     type: string;
     name: string;
@@ -46,18 +57,16 @@ type Profile = {
  */
 export default function ProfileScreen() {
   // Extract the profile ID from the route parameters
-  const { id } = useLocalSearchParams();
-  // State for storing the profile data
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
-  // State for managing the new insight input field
+  const [extendedData, setExtendedData] = useState<ExtendedProfileData | null>(null);
   const [newInsight, setNewInsight] = useState('');
-  // Loading state for photo uploads
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  // Custom hook for profile data operations
   const { getProfile, updateProfile, deleteProfile } = useProfile();
-  const [refreshedPhotoUrl, setRefreshedPhotoUrl] = useState<string>('');
+  const [refreshedPhotoUrl, setRefreshedPhotoUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showInsightForm, setShowInsightForm] = useState(false);
 
   /**
    * Fetches profile data from the backend
@@ -66,8 +75,33 @@ export default function ProfileScreen() {
     try {
       if (typeof id === 'string') {
         console.log("Fetching profile data for ID:", id);
-        const profileData = await getProfile(id, true);
-        setProfile(profileData as unknown as Profile);
+        const result = await getProfile(id, true);
+        
+        // Output debug info about the result structure
+        console.log("Profile result:", {
+          hasProfile: !!result?.profile,
+          hasExtendedData: !!result?.extendedData,
+          photoUrl: result?.profile?.photoUrl,
+          photoKey: result?.profile?.photoKey,
+          // Use a safer approach to log function properties
+          functionProps: result?.profile ? 
+            Object.entries(result.profile as any)
+              .filter(([_, value]) => typeof value === 'function')
+              .map(([key]) => key) 
+            : []
+        });
+        
+        if (result && result.profile) {
+          // Set the profile from the nested profile property
+          setProfile(result.profile as Profile);
+          
+          // If we have extended data, store it separately
+          if (result.extendedData) {
+            setExtendedData(result.extendedData);
+            console.log("Loaded insights:", result.extendedData.insightsData?.length || 0);
+            console.log("Loaded groups:", result.extendedData.groupsData?.length || 0);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -79,26 +113,50 @@ export default function ProfileScreen() {
     fetchProfile();
   }, [id]);
 
-  // Refresh profile data when screen comes into focus
+  // Refresh profile data when screen comes into focus, but only if it's been more than 30 seconds
+  // since the last fetch or if no profile data exists
+  const lastFetchTimeRef = useRef<number>(0);
   useFocusEffect(
     useCallback(() => {
-      console.log("Profile screen is focused, refreshing data");
-      fetchProfile();
+      const now = Date.now();
+      const shouldRefetch = !profile || (now - lastFetchTimeRef.current > 30000);
+      
+      if (shouldRefetch) {
+        console.log("Profile screen is focused, refreshing data");
+        fetchProfile();
+        lastFetchTimeRef.current = now;
+      } else {
+        console.log("Profile screen is focused, using cached data");
+      }
+      
       return () => {}; // cleanup function
-    }, [id])
+    }, [id, profile])
   );
 
-  // Add a function to refresh the image URL
+  // Optimize image URL resolution with a simplified approach
   useEffect(() => {
-    if (profile?.photoUrl && profile.photoKey) {
-      refreshImageUrl(profile.photoKey, profile.photoUrl)
-        .then(url => {
-          setRefreshedPhotoUrl(url);
-        })
-        .catch(error => {
-          console.error('Error refreshing profile image URL:', error);
-          setRefreshedPhotoUrl(profile.photoUrl); // Fallback to stored URL
-        });
+    console.log("Image URL effect triggered with:", {
+      photoUrl: profile?.photoUrl,
+      photoKey: profile?.photoKey
+    });
+    
+    // Direct CloudFront URL resolution for photoKey when available
+    if (profile?.photoKey) {
+      // We already know the key format from the logs, so directly construct the CloudFront URL
+      if (profile.photoKey.startsWith('private/')) {
+        const cloudFrontUrl = getCloudFrontUrl(profile.photoKey);
+        console.log("Direct CloudFront URL created:", cloudFrontUrl);
+        setRefreshedPhotoUrl(cloudFrontUrl);
+        return;
+      }
+    }
+    
+    // Fallback to photoUrl if available or clean up refreshedPhotoUrl if no URLs available
+    if (profile?.photoUrl) {
+      console.log("Using photoUrl directly:", profile.photoUrl);
+      setRefreshedPhotoUrl(profile.photoUrl);
+    } else {
+      setRefreshedPhotoUrl(null);
     }
   }, [profile?.photoUrl, profile?.photoKey]);
 
@@ -108,7 +166,7 @@ export default function ProfileScreen() {
   const handleEditPhoto = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -130,9 +188,9 @@ export default function ProfileScreen() {
               {
                 firstName: profile.firstName,
                 lastName: profile.lastName,
-                description: profile.description,
-                bio: profile.bio,
-                photoUrl: profile.photoUrl // Keep the old URL reference until the new one is created
+                description: profile.description || '',
+                bio: profile.bio || '',
+                photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined // Convert null to undefined
               },
               selectedPhotoUri, // Pass the photo URI to be uploaded
               [], // No insights to add
@@ -175,40 +233,30 @@ export default function ProfileScreen() {
    * Handles adding a new insight/note about the person
    */
   const handleAddInsight = async () => {
-    if (!profile || !newInsight.trim()) return;
-
-    const insight: Insight = {
-      id: Date.now().toString(),
-      text: newInsight.trim(),
-      timestamp: new Date().toISOString(),
-    };
+    if (!newInsight.trim() || !profile) return;
 
     try {
-      // Create updated profile object with the new insight
-      const updatedProfile = {
-        ...profile,
-        insights: [...profile.insights, insight],
-      };
+      // Current timestamp
+      const timestamp = new Date().toISOString();
       
-      // Call updateProfile with correct parameters
+      // Call updateProfile with the new insight
       await updateProfile(
         profile.id,
         {
           firstName: profile.firstName,
           lastName: profile.lastName,
-          description: profile.description,
-          bio: profile.bio,
-          photoUrl: profile.photoUrl
+          description: profile.description || '',
+          bio: profile.bio || '',
+          photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined // Convert null to undefined
         },
         undefined, // No new photo
-        [{ text: insight.text, timestamp: insight.timestamp }], // Insights to add
+        [{ text: newInsight, timestamp }], // Insights to add
         [], // No insights to remove
         [], // No groups to add
         [] // No groups to remove
       );
       
       // Update local state
-      setProfile(updatedProfile);
       setNewInsight('');
     } catch (error) {
       console.error('Error adding insight:', error);
@@ -223,21 +271,15 @@ export default function ProfileScreen() {
     if (!profile) return;
 
     try {
-      // Create updated profile object without the removed insight
-      const updatedProfile = {
-        ...profile,
-        insights: profile.insights.filter(insight => insight.id !== insightId),
-      };
-      
       // Call updateProfile with correct parameters
       await updateProfile(
         profile.id,
         {
           firstName: profile.firstName,
           lastName: profile.lastName,
-          description: profile.description,
-          bio: profile.bio,
-          photoUrl: profile.photoUrl
+          description: profile.description || '',
+          bio: profile.bio || '',
+          photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined // Convert null to undefined
         },
         undefined, // No new photo
         [], // No insights to add
@@ -246,8 +288,13 @@ export default function ProfileScreen() {
         [] // No groups to remove
       );
       
-      // Update local state
-      setProfile(updatedProfile);
+      // Update local extendedData state
+      if (extendedData) {
+        setExtendedData({
+          ...extendedData,
+          insightsData: extendedData.insightsData.filter(insight => insight.id !== insightId)
+        });
+      }
     } catch (error) {
       console.error('Error removing insight:', error);
     }
@@ -376,16 +423,13 @@ export default function ProfileScreen() {
                 source={
                   refreshedPhotoUrl && refreshedPhotoUrl.trim() !== '' 
                     ? { uri: refreshedPhotoUrl }
-                    : profile.photoUrl && profile.photoUrl.trim() !== '' 
+                    : profile?.photoUrl && profile.photoUrl.trim() !== '' 
                       ? { uri: profile.photoUrl }
                       : DEFAULT_PROFILE_IMAGE 
                 }
                 style={styles.photo}
                 contentFit="cover"
-                transition={{
-                  duration: 400,
-                  effect: 'cross-dissolve'
-                }}
+                transition={300}
                 placeholder={DEFAULT_PROFILE_IMAGE}
                 cachePolicy="memory-disk"
               />
@@ -402,12 +446,23 @@ export default function ProfileScreen() {
             <Text style={styles.description}>{profile.description}</Text>
             {/* Group membership tags */}
             <View style={styles.groupTags}>
-              {profile.groups.map((group, index) => (
-                <Text key={group.id} style={styles.groupTag}>
-                  {group.name}
-                  {index < profile.groups.length - 1 ? ' · ' : ''}
-                </Text>
-              ))}
+              {profile.groups && Array.isArray(profile.groups) ? (
+                profile.groups.map((group, index) => (
+                  <Text key={group.id} style={styles.groupTag}>
+                    {group.name}
+                    {index < profile.groups.length - 1 ? ' · ' : ''}
+                  </Text>
+                ))
+              ) : extendedData && extendedData.groupsData ? (
+                extendedData.groupsData.map((group, index) => (
+                  <Text key={group.id} style={styles.groupTag}>
+                    {group.name}
+                    {index < extendedData.groupsData.length - 1 ? ' · ' : ''}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.emptyGroupTag}>No groups</Text>
+              )}
             </View>
           </View>
 
@@ -416,51 +471,68 @@ export default function ProfileScreen() {
             {/* About/Bio Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-
                 <Text style={styles.sectionTitle}>About</Text>
               </View>
               <Text style={styles.bio}>{profile.bio}</Text>
             </View>
 
-            {/* Insights/Notes Section */}
-            <View style={styles.section}>
-              {/* List of existing insights */}
-              {profile.insights.length > 0 ? (
-                <View style={styles.insightsList}>
-                  {profile.insights.map(insight => (
-                    <View key={insight.id} style={styles.insightItem}>
-                      <Text style={styles.insightText}>{insight.text}</Text>
-                      <Pressable
-                        onPress={() => handleRemoveInsight(insight.id)}
-                        style={styles.removeInsight}>
-                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.noInsights}>No notes added yet</Text>
-              )}
-              
-              {/* Input for adding new insights */}
-              <View style={styles.insightInput}>
-                <TextInput
-                  style={styles.insightTextInput}
-                  value={newInsight}
-                  onChangeText={setNewInsight}
-                  placeholder="Add a quick note..."
-                  multiline
-                  placeholderTextColor="#77B8B6"
-                />
-                <Pressable
-                  onPress={handleAddInsight}
-                  style={[
-                    styles.addInsightButton,
-                    !newInsight.trim() && styles.addInsightButtonDisabled
-                  ]}>
-                  <Ionicons name="add" size={24} color="#FFFFFF" />
+            {/* Profile Insights Section */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Notes & Insights</Text>
+                <Pressable onPress={() => setShowInsightForm(true)} style={styles.addButton}>
+                  <Ionicons name="add-circle" size={24} color="#4CAF50" />
                 </Pressable>
               </View>
+              
+              {/* Insights List */}
+              {extendedData && extendedData.insightsData.length > 0 ? (
+                extendedData.insightsData.map((insight) => (
+                  <View key={insight.id} style={styles.insightItem}>
+                    <View style={styles.insightContent}>
+                      <Text style={styles.insightText}>{insight.text}</Text>
+                      <Text style={styles.insightDate}>
+                        {new Date(insight.timestamp).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => handleRemoveInsight(insight.id)}
+                      style={styles.deleteInsightButton}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+                    </Pressable>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No insights yet. Add some!</Text>
+              )}
+            </View>
+            
+            {/* Groups Section */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Groups</Text>
+              
+              {/* Groups List */}
+              {extendedData && extendedData.groupsData.length > 0 ? (
+                extendedData.groupsData.map((group, index) => (
+                  <View key={group.id} style={styles.groupItem}>
+                    <View style={styles.groupIcon}>
+                      <Ionicons 
+                        name={
+                          group.type === 'work' ? 'business' : 
+                          group.type === 'school' ? 'school' : 
+                          group.type === 'social' ? 'people' : 'grid'
+                        } 
+                        size={20} 
+                        color="#FFFFFF" 
+                      />
+                    </View>
+                    <Text style={styles.groupName}>{group.name}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>Not a member of any groups yet.</Text>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -509,9 +581,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   photo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 200,
+    height: 200,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FFFFFF',
   },
@@ -634,5 +706,54 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  sectionContainer: {
+    marginBottom: 16,
+    backgroundColor: 'rgba(144, 202, 199, 0.1)', // Light teal background at 50% opacity
+    borderRadius: 10,
+    padding: 12,
+  },
+  addButton: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+  },
+  insightContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  insightDate: {
+    fontSize: 12,
+    color: '#85c3c0',
+    marginLeft: 8,
+  },
+  deleteInsightButton: {
+    padding: 4,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#85c3c0',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  groupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  groupIcon: {
+    marginRight: 8,
+  },
+  groupName: {
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  emptyGroupTag: {
+    fontSize: 14,
+    color: '#85c3c0',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 16,
   },
 });

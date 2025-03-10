@@ -5,6 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 
 
+
+
+
 export default function TabLayout() {
   return (
     <Tabs
@@ -61,6 +64,15 @@ export default function TabLayout() {
           title: 'Settings',
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Videos"
+        options={{
+          title: 'Videos',
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="videocam" size={size} color={color} />
           ),
         }}
       />

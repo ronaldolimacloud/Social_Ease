@@ -11,6 +11,7 @@ import { client } from '../../lib/amplify';
 // Import our profile modal component
 import ProfileModal from '../../components/ProfileModal';
 import CustomAlert from '../../components/CustomAlert';
+import { getCloudFrontUrl } from '../../lib/utils/cloudfront';
 
 // Import the logo directly
 const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
@@ -133,62 +134,72 @@ export default function ProfilesScreen() {
   });
 
   // Component to render individual profile cards
-  const renderProfile = ({ item }: { item: Profile }) => (
-    <View style={styles.profileGridItem}>
-      <Link href={`/profile/${item.id}`} asChild>
-        <Pressable style={styles.profileGridContent}>
-          <Image 
-            source={
-              item.photoUrl && item.photoUrl.trim() !== ''
-                ? { uri: item.photoUrl }
-                : DEFAULT_PROFILE_IMAGE
-            } 
-            style={styles.profileGridImage}
-            contentFit="cover"
-            transition={{
-              duration: 400,
-              effect: 'cross-dissolve'
-            }}
-            placeholder={DEFAULT_PROFILE_IMAGE}
-            cachePolicy="memory-disk"
-          />
-          {/* Text overlay on the image */}
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
-            style={styles.profileTextOverlay}
-          >
-            <Text style={styles.gridName} numberOfLines={1}>{`${item.firstName} ${item.lastName}`}</Text>
-            {item.description && (
-              <Text style={styles.gridDescription} numberOfLines={1}>{item.description}</Text>
-            )}
-            
-            {/* Group tag as a small chip */}
-            {item.groups && item.groups.length > 0 && (
-              <View style={styles.gridGroupTag}>
-                <Ionicons 
-                  name={
-                    item.groups[0].type === 'work' ? 'business' : 
-                    item.groups[0].type === 'school' ? 'school' : 
-                    item.groups[0].type === 'social' ? 'people' : 'grid'
-                  } 
-                  size={10} 
-                  color="#FFFFFF"
-                  style={styles.gridGroupTagIcon}
-                />
-                <Text 
-                  style={styles.gridGroupTagText}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.groups[0].name}
-                </Text>
-              </View>
-            )}
-          </LinearGradient>
-        </Pressable>
-      </Link>
-    </View>
-  );
+  const renderProfile = ({ item }: { item: Profile }) => {
+    // Determine the best image source
+    let imageSource = DEFAULT_PROFILE_IMAGE;
+    
+    // First try to use photoKey with proper encoding if available
+    if (item.photoKey) {
+      imageSource = { uri: getCloudFrontUrl(item.photoKey) };
+    } 
+    // Fall back to photoUrl if no photoKey is available
+    else if (item.photoUrl && item.photoUrl.trim() !== '') {
+      imageSource = { uri: item.photoUrl };
+    }
+    
+    return (
+      <View style={styles.profileGridItem}>
+        <Link href={`/profile/${item.id}`} asChild>
+          <Pressable style={styles.profileGridContent}>
+            <Image 
+              source={imageSource}
+              style={styles.profileGridImage}
+              contentFit="cover"
+              transition={{
+                duration: 400,
+                effect: 'cross-dissolve'
+              }}
+              placeholder={DEFAULT_PROFILE_IMAGE}
+              cachePolicy="memory-disk"
+            />
+            {/* Text overlay on the image */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.profileTextOverlay}
+            >
+              <Text style={styles.gridName} numberOfLines={1}>{`${item.firstName} ${item.lastName}`}</Text>
+              {item.description && (
+                <Text style={styles.gridDescription} numberOfLines={1}>{item.description}</Text>
+              )}
+              
+              {/* Group tag as a small chip */}
+              {item.groups && item.groups.length > 0 && (
+                <View style={styles.gridGroupTag}>
+                  <Ionicons 
+                    name={
+                      item.groups[0].type === 'work' ? 'business' : 
+                      item.groups[0].type === 'school' ? 'school' : 
+                      item.groups[0].type === 'social' ? 'people' : 'grid'
+                    } 
+                    size={10} 
+                    color="#FFFFFF"
+                    style={styles.gridGroupTagIcon}
+                  />
+                  <Text 
+                    style={styles.gridGroupTagText}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.groups[0].name}
+                  </Text>
+                </View>
+              )}
+            </LinearGradient>
+          </Pressable>
+        </Link>
+      </View>
+    );
+  };
 
   // Utility function for debugging layout issues
   const logLayout = (componentName: string) => (event: LayoutChangeEvent) => {
@@ -324,47 +335,6 @@ export default function ProfilesScreen() {
         isProfilesTab={true}
       />
 
-      {/* Container for action cards */}
-      <View style={styles.actionCardsContainer}>
-        {/* Touchable card for creating a new profile */}
-        <Pressable 
-          onPress={handleOpenProfileModal}
-          style={styles.actionCardBase}
-        >
-          <LinearGradient
-            colors={['#092121', '#153434']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.actionCard}
-          >
-            {/* Icon container */}
-            <View style={styles.actionCardIcon}>
-              <Ionicons name="person-add" size={18} color="#FFFFFF" />
-            </View>
-            <Text style={styles.actionCardText}>Create Profile</Text>
-          </LinearGradient>
-        </Pressable>
-
-        {/* New Modal button */}
-        <Pressable 
-          onPress={() => router.push('/modal/modalino')}
-          style={styles.actionCardBase}
-        >
-          <LinearGradient
-            colors={['#092121', '#153434']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.actionCard}
-          >
-            {/* Icon container */}
-            <View style={styles.actionCardIcon}>
-              <Ionicons name="apps" size={18} color="#FFFFFF" />
-            </View>
-            <Text style={styles.actionCardText}>Modal</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
-
       {/* Scrollable horizontal container */}
       <ScrollView 
         horizontal
@@ -445,6 +415,47 @@ export default function ProfilesScreen() {
         />
       )}
 
+      {/* Bottom action buttons container */}
+      <View style={styles.bottomActionContainer}>
+        {/* Touchable card for creating a new profile */}
+        <Pressable 
+          onPress={handleOpenProfileModal}
+          style={styles.actionCardBase}
+        >
+          <LinearGradient
+            colors={['#092121', '#153434']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.actionCard}
+          >
+            {/* Icon container */}
+            <View style={styles.actionCardIcon}>
+              <Ionicons name="person-add" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionCardText}>Create Profile</Text>
+          </LinearGradient>
+        </Pressable>
+
+        {/* New Modal button */}
+        <Pressable 
+          onPress={() => router.push('/modal/modalino')}
+          style={styles.actionCardBase}
+        >
+          <LinearGradient
+            colors={['#092121', '#153434']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.actionCard}
+          >
+            {/* Icon container */}
+            <View style={styles.actionCardIcon}>
+              <Ionicons name="apps" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionCardText}>Modal</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+
       {/* Profile modal */}
       <ProfileModal 
         visible={showProfileModal} 
@@ -458,12 +469,6 @@ export default function ProfilesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1, // Take up all available space
-  },
-  actionCardsContainer: {
-    flexDirection: 'row', // Arrange children horizontally
-    justifyContent: 'space-between', // Space evenly between action cards
-    paddingHorizontal: 16, // Add padding on left and right
-    paddingVertical: 8, // Add padding on top and bottom
   },
   actionCardBase: {
     width: '48%', // Take up slightly less than half the width (with spacing)
@@ -493,6 +498,20 @@ const styles = StyleSheet.create({
     fontSize: 12, // Text size
     fontWeight: '500', // Medium font weight
     color: '#FFFFFF', // White text color to contrast with gradient background
+  },
+  bottomActionContainer: {
+    flexDirection: 'row', // Arrange children horizontally
+    justifyContent: 'space-between', // Space evenly between action cards
+    paddingHorizontal: 16, // Add padding on left and right
+    paddingVertical: 12, // Add padding on top and bottom
+    position: 'absolute', // Position absolutely
+    bottom: 0, // Position at the bottom of the screen
+    left: 0, // Align to the left edge
+    right: 0, // Align to the right edge
+    backgroundColor: 'rgba(2, 14, 14, 0.9)', // Semi-transparent background to ensure readability
+    borderTopWidth: 1, // Add top border
+    borderTopColor: 'rgba(67, 124, 121, 0.3)', // Subtle teal border
+    zIndex: 10, // Ensure it appears above other elements
   },
   headerContainer: {
     backgroundColor: '#020e0e', // Dark background for header
@@ -576,7 +595,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 8, // Slightly tighter padding for larger images
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 80, // Increase bottom padding to make room for the fixed bottom bar
     flexGrow: 1,
     backgroundColor: 'transparent',
   },
