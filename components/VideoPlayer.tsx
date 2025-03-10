@@ -1,6 +1,6 @@
 import { useEvent, useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { StyleSheet, View, Button, Image, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, View, Button, Image, TouchableOpacity, StyleProp, ViewStyle, Text, Dimensions } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 
@@ -14,17 +14,19 @@ interface VideoPlayerProps {
   thumbnailQuality?: number;
   containerStyle?: StyleProp<ViewStyle>;
   loop?: boolean;
+  caption?: string;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   videoSource,
-  width = 405,
-  height = 275,
+  width = Dimensions.get('window').width - 32, // Match article image width
+  height = 230, // Match article image height
   showControls = false,
   thumbnailTime = 4500,
   thumbnailQuality = 0.7,
   containerStyle,
   loop = true,
+  caption,
 }) => {
   // Track user interaction
   const [userInitiatedPlay, setUserInitiatedPlay] = useState(false);
@@ -76,18 +78,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       position: 'relative',
       width,
       height,
+      overflow: 'hidden',
+      borderRadius: 8, // Match article image border radius
     },
     video: {
       width,
       height,
+      borderRadius: 8, // Match article image border radius
     },
     thumbnailContainer: {
       position: 'absolute',
       top: 0,
       left: 0,
-      width,
-      height,
+      right: 0,
+      bottom: 0,
+      width: '100%',
+      height: '100%',
       backgroundColor: 'black',
+      overflow: 'hidden',
+      borderRadius: 8, // Match article image border radius
     },
   });
 
@@ -116,6 +125,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </TouchableOpacity>
         )}
       </View>
+      
+      {/* Caption and divider */}
+      {caption && (
+        <View style={styles.captionContainer}>
+          <Text style={styles.captionText}>{caption}</Text>
+          <View style={styles.divider} />
+        </View>
+      )}
+      
       {showControls && (
         <View style={styles.controlsContainer}>
           <Button
@@ -143,6 +161,12 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8, // Match article image border radius
   },
   // Play button overlay styling
   playButtonOverlay: {
@@ -174,6 +198,25 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     padding: 10,
+  },
+  captionContainer: {
+    width: '100%',
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+  },
+  captionText: {
+    fontSize: 10,
+    color: '#85c3c0',
+    fontStyle: 'italic',
+    marginTop: 8,
+    paddingHorizontal: 4,
+    lineHeight: 20,
+  },
+  divider: {
+    width: '100%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#153434',
+    marginBottom: 8,
   },
 });
 

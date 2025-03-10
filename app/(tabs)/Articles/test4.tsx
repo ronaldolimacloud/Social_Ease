@@ -47,11 +47,11 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 14,
   },
   link: {
     paddingTop: 20,
-    fontSize: 20,
+    fontSize: 14,
     color: '#FFFFFF',
   },
   options: {
