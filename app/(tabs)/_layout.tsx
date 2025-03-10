@@ -76,6 +76,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="Articles"
+        options={{
+          title: 'Articles',
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="newspaper" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   
     

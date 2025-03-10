@@ -18,9 +18,9 @@ export default function CreateScreen() {
     >
       
       <View style={styles.contentContainer}>
-        <Text style={styles.text}>Modal Test</Text>
+        <Text style={styles.text}>Articles</Text>
         <Link href="./test3" style={styles.link}>
-          Open modal
+          Read your articles here...
         </Link>
       </View>
     </LinearGradient>

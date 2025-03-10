@@ -1,110 +1,104 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import ModernVideoPlayer from '../../../components/ModernVideoPlayer';
+import { View, Text, ScrollView, StyleSheet, Image, Dimensions } from 'react-native';
+import VideoPlayer from '../../../components/VideoPlayer'; // Import the video player component
 
-export default function ArticleWithVideo() {
-  // Article data
-  const article = {
-    title: "The Art of Animation",
-    author: "Jane Smith",
-    date: "March 10, 2025",
-    video: {
-      source: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      caption: "Big Buck Bunny - A classic animation short film"
-    },
-    content: [
-      "Animation has evolved significantly over the past century, from hand-drawn frames to sophisticated computer-generated imagery.",
-      "The principles established by early animators still form the foundation of modern animation techniques. Concepts like squash and stretch, anticipation, and timing remain fundamental regardless of the technology used.",
-      "Today's animation studios blend traditional artistic knowledge with cutting-edge technology to create immersive visual experiences. The film above demonstrates many of these principles in action.",
-      "What makes animation particularly powerful is its ability to visualize concepts that would be impossible or impractical to film in real life. This freedom allows creators to build entirely new worlds governed by their own physics and logic.",
-      "As technology continues to advance, we're seeing the lines between animation and reality blur. Techniques like motion capture, procedural animation, and AI-assisted workflows are pushing the boundaries of what's possible."
-    ]
-  };
-
+export default function NewsArticlePage() {
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.articleTitle}>{article.title}</Text>
-        
-        <View style={styles.metaInfo}>
-          <Text style={styles.author}>By {article.author}</Text>
-          <Text style={styles.date}>{article.date}</Text>
-        </View>
-        
-        {/* Video player integrated into the article */}
-        <View style={styles.videoContainer}>
-          <ModernVideoPlayer 
-            source={article.video.source}
-            autoplay={false}
-            allowFullscreen={true}
-            style={styles.videoPlayer}
-          />
-          <Text style={styles.videoCaption}>{article.video.caption}</Text>
-        </View>
-        
-        {/* Article content */}
-        <View style={styles.articleContent}>
-          {article.content.map((paragraph, index) => (
-            <Text key={index} style={styles.paragraph}>{paragraph}</Text>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Breaking News: Important Event</Text>
+      
+      <View style={styles.publisherContainer}>
+        <Text style={styles.publisher}>The Daily Chronicle</Text>
+        <Text style={styles.date}>March 10, 2025 • 10:30 AM</Text>
+      </View>
+      
+      {/* Full-width article image */}
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: "https://via.placeholder.com/800x450" }} 
+          style={styles.articleImage}
+          resizeMode="cover"
+        />
+        <Text style={styles.imageCaption}>Caption: Description of the image goes here, providing context for readers</Text>
+      </View>
+      
+      {/* Original video player component - restored */}
+      <VideoPlayer
+        videoSource="https://d1z0p5svpgge1j.cloudfront.net/bedrock2.mp4"
+        width={350}
+        height={220}
+        containerStyle={styles.videoContainer}
+        thumbnailTime={3000} // 3 seconds in
+      />
+      
+      <Text style={styles.paragraph}>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam 
+        eget felis eget urna ultrices mollis a vel massa. Pellentesque habitant 
+        morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+      </Text>
+
+      <Text style={styles.paragraph}>
+        Mauris eu risus enim. Vestibulum ante ipsum primis in faucibus orci luctus 
+        et ultrices posuere cubilia curae; Nullam euismod diam vel metus lobortis, 
+        vel placerat enim facilisis.
+      </Text>
+      
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
     backgroundColor: '#fff',
   },
-  scrollContent: {
-    padding: 16,
-  },
-  articleTitle: {
-    fontSize: 28,
+  title: {
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#222',
     marginBottom: 12,
+    color: '#222',
   },
-  metaInfo: {
+  publisherContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    alignItems: 'center',
+    marginBottom: 20,
     paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eaeaea',
   },
-  author: {
+  publisher: {
     fontSize: 14,
-    color: '#666',
+    fontWeight: '600',
+    color: '#0066cc',
   },
   date: {
     fontSize: 14,
     color: '#666',
   },
-  videoContainer: {
-    marginBottom: 24,
+  imageContainer: {
+    marginBottom: 20,
   },
-  videoPlayer: {
+  articleImage: {
+    width: Dimensions.get('window').width - 32, // Full width minus padding
+    height: 230,
     borderRadius: 8,
-    backgroundColor: '#000',
   },
-  videoCaption: {
+  imageCaption: {
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
     marginTop: 8,
-    textAlign: 'center',
+    paddingHorizontal: 4,
   },
-  articleContent: {
-    marginTop: 8,
+  videoContainer: {
+    marginBottom: 20,
   },
   paragraph: {
     fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
+    lineHeight: 26,
     marginBottom: 16,
+    color: '#333',
   },
 });
