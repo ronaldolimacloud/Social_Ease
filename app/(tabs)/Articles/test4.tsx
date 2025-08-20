@@ -1,8 +1,10 @@
-import { View, StyleSheet, Pressable, Text } from 'react-native';
-import { Link, } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View, } from 'react-native';
+import { Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import Header from '../../components/Header';
+import { Link } from 'expo-router';
+
+
+
 
 export default function CreateScreen() {
   return (
@@ -16,14 +18,19 @@ export default function CreateScreen() {
     >
       
       <View style={styles.contentContainer}>
-        <Text style={styles.text}>test screen</Text>
-        <Link href="../modal/modal_profile" style={styles.link}>
-          Take me out of (tabs)
+        <Text style={styles.text}>Articles</Text>
+        <Link href="./test3" style={styles.link}>
+          Read your articles here...
         </Link>
       </View>
     </LinearGradient>
   );
 }
+
+
+
+
+
 
 
 
@@ -40,11 +47,11 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 14,
   },
   link: {
     paddingTop: 20,
-    fontSize: 20,
+    fontSize: 14,
     color: '#FFFFFF',
   },
   options: {

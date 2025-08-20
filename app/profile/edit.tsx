@@ -1,6 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -89,22 +90,23 @@ export default function EditProfileScreen() {
     const fetchProfile = async () => {
       try {
         if (typeof id === 'string') {
-          const profileData = await getProfile(id, true);
+          const result = await getProfile(id, true);
           
-          // Make sure profileData has the expected shape
-          if (profileData) {
-            // Cast to any first to avoid type issues with complex structure
-            const data = profileData as any;
+          // Make sure result has the expected shape
+          if (result && result.profile) {
+            const profile = result.profile;
+            const extendedData = result.extendedData || { insightsData: [], groupsData: [] };
             
+            // Format the profile data with the extended data
             const formattedProfile: Profile = {
-              id: data.id || '',
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
-              description: data.description || '',
-              bio: data.bio || '',
-              photoUrl: data.photoUrl || '',
-              insights: Array.isArray(data.insights) ? data.insights : [],
-              groups: Array.isArray(data.groups) ? data.groups : []
+              id: profile.id || '',
+              firstName: profile.firstName || '',
+              lastName: profile.lastName || '',
+              description: profile.description || '',
+              bio: profile.bio || '',
+              photoUrl: profile.photoUrl || '',
+              insights: extendedData.insightsData || [],
+              groups: extendedData.groupsData || []
             };
             
             setProfile(formattedProfile);
@@ -306,12 +308,19 @@ export default function EditProfileScreen() {
             <Image 
               source={
                 photoUri && photoUri.trim() !== '' 
-                  ? { uri: photoUri } 
+                  ? { uri: photoUri }
                   : profile.photoUrl && profile.photoUrl.trim() !== '' 
-                    ? { uri: profile.photoUrl } 
+                    ? { uri: profile.photoUrl }
                     : DEFAULT_PROFILE_IMAGE
               } 
-              style={styles.photo} 
+              style={styles.photo}
+              contentFit="cover"
+              transition={{
+                duration: 400,
+                effect: 'cross-dissolve'
+              }}
+              placeholder={DEFAULT_PROFILE_IMAGE}
+              cachePolicy="memory-disk"
             />
             <View style={styles.editPhotoButton}>
               {uploadingPhoto ? (

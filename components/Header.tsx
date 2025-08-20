@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Image, TextInput, ViewStyle, TextStyle, ImageStyle, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ViewStyle, TextStyle, ImageStyle, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -51,10 +52,14 @@ export default function Header({
           <View style={styles.logoContainer}>
             <Image 
               source={require('../assets/images/logo.png')} 
-              style={styles.logo} 
+              style={styles.logo}
+              contentFit="contain"
+              transition={{
+                duration: 300,
+                effect: 'cross-dissolve'
+              }}
+              cachePolicy="memory" 
             />
-
-
           </View>
           {isProfilesTab && (
             <Pressable onPress={onSearchPress} style={styles.searchButton}>

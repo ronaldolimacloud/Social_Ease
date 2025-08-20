@@ -1,11 +1,19 @@
-import { Tabs } from 'expo-router';
+import { Tabs, } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
+
+
+
+
+
+
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: "fade",
         tabBarStyle: {
           backgroundColor: '#020e0e',
           borderTopWidth: 0,
@@ -59,6 +67,26 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="Videos"
+        options={{
+          title: 'Videos',
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="videocam" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Articles"
+        options={{
+          title: 'Articles',
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="newspaper" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
+  
+    
   );
 }

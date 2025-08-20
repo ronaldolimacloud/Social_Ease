@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { router, Stack } from 'expo-router';
+import { router, Stack, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useProfile } from '../../lib/hooks/useProfile';
-import { useGroup } from '../../lib/hooks/useGroup';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useProfile } from '../../../lib/hooks/useProfile';
+import { useGroup } from '../../../lib/hooks/useGroup';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// ... existing code ...
 
 type Group = {
   id: string;
@@ -22,10 +25,10 @@ type Insight = {
 };
 
 // Import the logo directly
-const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
+const DEFAULT_PROFILE_IMAGE = require('../../../assets/images/logo.png');
 const WINDOW_HEIGHT = Dimensions.get('window').height;
 
-export default function NewProfileScreen() {
+export default function CreateScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const [firstName, setFirstName] = useState('');
@@ -77,7 +80,6 @@ export default function NewProfileScreen() {
       setLoadingGroups(true);
       const result = await listGroups();
       if (result.data) {
-        // Map the data to our Group type
         const groups = result.data.map(group => ({
           id: group.id,
           name: group.name,
@@ -167,7 +169,7 @@ export default function NewProfileScreen() {
       selectedGroups.map(group => ({
         id: group.id,
         name: group.name,
-        type: group.type || 'general' // Provide a default value for type
+        type: group.type || 'general'
       })));
 
       if (newProfile) {
@@ -193,13 +195,9 @@ export default function NewProfileScreen() {
     });
   };
 
-  // Improved input focus handler with smoother scrolling
   const handleInputFocus = (inputHeight: number, yPosition: number) => {
-    // Add a small delay to ensure the keyboard is visible when scrolling
     setTimeout(() => {
-      // Calculate a better position that accounts for the keyboard and keeps the input in view
       const scrollToY = Math.max(0, yPosition - 120);
-      
       scrollViewRef.current?.scrollTo({
         y: scrollToY,
         animated: true,
@@ -208,25 +206,15 @@ export default function NewProfileScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Create Profile',
-          headerLeft: () => (
-            <Pressable 
-              onPress={() => router.back()}
-              style={{ 
-                marginLeft: 16,
-                padding: 8,
-              }}
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </Pressable>
-          ),
-        }}
-      />
+    <LinearGradient
+      colors={['#061a1a', '#020e0e']}
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      locations={[0.5, 1]}
+    >
       <KeyboardAvoidingView 
-        style={styles.container}
+        style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
       >
@@ -256,7 +244,7 @@ export default function NewProfileScreen() {
               <Pressable
                 style={styles.editPhotoButton}
                 onPress={handleSelectPhoto}>
-                <Ionicons name="camera" size={20} color="#FFFFFF" />
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
               </Pressable>
             </View>
           </View>
@@ -269,6 +257,7 @@ export default function NewProfileScreen() {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="Enter first name"
+                placeholderTextColor="#6a8a8a"
                 onFocus={() => handleInputFocus(40, 180)}
               />
             </View>
@@ -280,6 +269,7 @@ export default function NewProfileScreen() {
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Enter last name"
+                placeholderTextColor="#6a8a8a"
                 onFocus={() => handleInputFocus(40, 240)}
               />
             </View>
@@ -291,6 +281,7 @@ export default function NewProfileScreen() {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="e.g. Software Engineer, Student, Artist"
+                placeholderTextColor="#6a8a8a"
                 onFocus={() => handleInputFocus(40, 300)}
               />
             </View>
@@ -302,6 +293,7 @@ export default function NewProfileScreen() {
                 value={bio}
                 onChangeText={setBio}
                 placeholder="Tell us about yourself..."
+                placeholderTextColor="#6a8a8a"
                 multiline
                 numberOfLines={4}
                 onFocus={() => handleInputFocus(80, 360)}
@@ -316,6 +308,7 @@ export default function NewProfileScreen() {
                   value={newInsight}
                   onChangeText={setNewInsight}
                   placeholder="Add a quick note about this person..."
+                  placeholderTextColor="#6a8a8a"
                   multiline
                   onFocus={() => handleInputFocus(40, 480)}
                 />
@@ -336,7 +329,7 @@ export default function NewProfileScreen() {
                       <Pressable
                         onPress={() => handleRemoveInsight(insight.id)}
                         style={styles.removeInsight}>
-                        <Ionicons name="close-circle" size={20} color="#666666" />
+                        <Ionicons name="close-circle" size={20} color="#c8e8e8" />
                       </Pressable>
                     </View>
                   ))}
@@ -354,7 +347,7 @@ export default function NewProfileScreen() {
                     ? `${selectedGroups.length} group${selectedGroups.length === 1 ? '' : 's'} selected`
                     : 'Select groups'}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#666666" />
+                <Ionicons name="chevron-down" size={20} color="#c8e8e8" />
               </Pressable>
               {selectedGroups.length > 0 && (
                 <View style={styles.selectedGroups}>
@@ -364,7 +357,7 @@ export default function NewProfileScreen() {
                       <Pressable
                         onPress={() => toggleGroup(group)}
                         style={styles.removeGroup}>
-                        <Ionicons name="close-circle" size={20} color="#666666" />
+                        <Ionicons name="close-circle" size={20} color="#c8e8e8" />
                       </Pressable>
                     </View>
                   ))}
@@ -403,7 +396,7 @@ export default function NewProfileScreen() {
 
               {loadingGroups ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#007AFF" />
+                  <ActivityIndicator size="large" color="#1f9b98" />
                   <Text style={styles.loadingText}>Loading groups...</Text>
                 </View>
               ) : availableGroups.length === 0 ? (
@@ -422,13 +415,13 @@ export default function NewProfileScreen() {
                         style={[styles.groupItem, isSelected && styles.groupItemSelected]}
                         onPress={() => toggleGroup(group)}>
                         <View style={styles.groupIcon}>
-                          <Ionicons name="people" size={24} color="#007AFF" />
+                          <Ionicons name="people" size={24} color="#1f9b98" />
                         </View>
                         <View style={styles.groupInfo}>
                           <Text style={styles.groupName}>{group.name}</Text>
                         </View>
                         {isSelected && (
-                          <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+                          <Ionicons name="checkmark-circle" size={24} color="#1f9b98" />
                         )}
                       </Pressable>
                     );
@@ -445,57 +438,67 @@ export default function NewProfileScreen() {
           </View>
         </Modal>
       </KeyboardAvoidingView>
-    </>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  contentContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
     flexGrow: 1,
+    paddingTop: 16,
   },
   form: {
     padding: 16,
-    gap: 20, // Increased spacing between form elements
+    gap: 20,
   },
   inputGroup: {
-    gap: 8, // Increased spacing between label and input
+    gap: 8,
   },
   label: {
-    fontSize: 16, // Increased font size
+    fontSize: 16,
     fontWeight: '500',
-    color: '#333333',
-    marginBottom: 4, // Added extra spacing below label
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   required: {
-    color: '#FF3B30',
+    color: '#ff6b6b',
   },
   optional: {
     fontSize: 14,
-    color: '#888888',
+    color: '#6a8a8a',
     fontWeight: '400',
   },
   input: {
-    height: 48, // Increased input height for better touch targets
-    backgroundColor: '#F5F5F5',
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     paddingHorizontal: 14,
-    fontSize: 16, // Increased font size for better readability
+    fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    color: '#FFFFFF',
   },
   inputError: {
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: '#ff6b6b',
   },
   textArea: {
-    height: 100, // Taller text area
+    height: 100,
     paddingTop: 12,
     paddingBottom: 12,
     textAlignVertical: 'top',
@@ -506,24 +509,25 @@ const styles = StyleSheet.create({
   },
   insightTextInput: {
     flex: 1,
-    height: 48, // Increased height
-    backgroundColor: '#F5F5F5',
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     paddingHorizontal: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    color: '#FFFFFF',
   },
   addInsightButton: {
-    width: 48, // Increased size
-    height: 48, // Increased size
-    backgroundColor: '#007AFF',
+    width: 50,
+    height: 50,
+    backgroundColor: '#1f9b98',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addInsightButtonDisabled: {
-    backgroundColor: '#B4B4B4',
+    backgroundColor: 'rgba(31, 155, 152, 0.5)',
   },
   insightsList: {
     marginTop: 12,
@@ -532,33 +536,36 @@ const styles = StyleSheet.create({
   insightItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(31, 155, 152, 0.2)',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(31, 155, 152, 0.3)',
   },
   insightText: {
     flex: 1,
     fontSize: 15,
     marginRight: 8,
+    color: '#FFFFFF',
   },
   removeInsight: {
-    padding: 4, // Increased touch target
+    padding: 4,
   },
   groupSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
-    padding: 14, // Increased padding
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    height: 48, // Fixed height for consistency
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    height: 50,
   },
   groupSelectorText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#FFFFFF',
   },
   selectedGroups: {
     marginTop: 12,
@@ -569,44 +576,46 @@ const styles = StyleSheet.create({
   selectedGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(31, 155, 152, 0.2)',
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(31, 155, 152, 0.3)',
   },
   selectedGroupText: {
     fontSize: 14,
-    color: '#333333',
+    color: '#FFFFFF',
     marginRight: 4,
   },
   removeGroup: {
     marginLeft: 4,
-    padding: 2, // Increased touch target
+    padding: 2,
   },
   buttonContainer: {
     padding: 16,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#1f9b98',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    height: 56, // Fixed height
+    height: 56,
   },
   saveButtonDisabled: {
-    backgroundColor: '#B4B4B4',
+    backgroundColor: 'rgba(31, 155, 152, 0.5)',
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 18, // Increased size
+    fontSize: 18,
     fontWeight: '600',
   },
   saveButtonTextDisabled: {
-    color: '#FFFFFF',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -626,9 +635,10 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#333333',
   },
   modalClose: {
-    padding: 8, // Increased touch target
+    padding: 8,
   },
   groupsList: {
     padding: 16,
@@ -636,21 +646,21 @@ const styles = StyleSheet.create({
   groupItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14, // Increased padding
+    padding: 14,
     borderRadius: 10,
     marginBottom: 8,
     backgroundColor: '#F8F8F8',
   },
   groupItemSelected: {
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(31, 155, 152, 0.1)',
   },
   groupIcon: {
-    width: 40, // Increased size
-    height: 40, // Increased size
+    width: 40,
+    height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(31, 155, 152, 0.1)',
   },
   groupInfo: {
     flex: 1,
@@ -660,6 +670,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 2,
+    color: '#333333',
   },
   loadingContainer: {
     padding: 40,
@@ -688,15 +699,15 @@ const styles = StyleSheet.create({
   },
   modalDone: {
     margin: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#1f9b98',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    height: 56, // Fixed height
+    height: 56,
   },
   modalDoneText: {
     color: '#FFFFFF',
-    fontSize: 18, // Increased size
+    fontSize: 18,
     fontWeight: '600',
   },
   photoWrapper: {
@@ -708,23 +719,57 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   photo: {
-    width: 120, // Increased size
-    height: 120, // Increased size
+    width: 120,
+    height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#F0F8FF',
+    borderColor: 'rgba(31, 155, 152, 0.5)',
   },
   editPhotoButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
-    backgroundColor: '#437C79',
-    width: 36, // Increased size
-    height: 36, // Increased size
+    backgroundColor: '#1f9b98',
+    width: 36,
+    height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#061a1a',
+  },
+  text: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  link: {
+    paddingTop: 20,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  options: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+    padding: 16,
+  },
+  option: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
