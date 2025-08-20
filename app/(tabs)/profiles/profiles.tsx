@@ -4,17 +4,17 @@ import { Image } from 'expo-image';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Header from '../../components/Header';
-import { useProfiles, type Profile } from '../../lib/hooks/useProfiles';
-import { useProfile } from '../../lib/hooks/useProfile';
-import { client } from '../../lib/amplify';
+import Header from '../../../components/Header';
+import { useProfiles, type Profile } from '../../../lib/hooks/useProfiles';
+import { useProfile } from '../../../lib/hooks/useProfile';
+import { client } from '../../../lib/amplify';
 // Import our profile modal component
-import ProfileModal from '../../components/ProfileModal';
-import CustomAlert from '../../components/CustomAlert';
-import { getCloudFrontUrl } from '../../lib/utils/cloudfront';
+import ProfileModal from '../../../components/ProfileModal';
+import CustomAlert from '../../../components/CustomAlert';
+import { getCloudFrontUrl } from '../../../lib/utils/cloudfront';
 
 // Import the logo directly
-const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
+const DEFAULT_PROFILE_IMAGE = require('../../../assets/images/logo.png');
 
 // Updated function to use actual groups from the database
 const useGroups = () => {
@@ -438,7 +438,7 @@ export default function ProfilesScreen() {
 
         {/* New Modal button */}
         <Pressable 
-          onPress={() => router.push('/modal/modalino')}
+          onPress={() => router.push('/(tabs)/profiles/new_profile')}
           style={styles.actionCardBase}
         >
           <LinearGradient
@@ -451,7 +451,7 @@ export default function ProfilesScreen() {
             <View style={styles.actionCardIcon}>
               <Ionicons name="apps" size={18} color="#FFFFFF" />
             </View>
-            <Text style={styles.actionCardText}>Modal</Text>
+            <Text style={styles.actionCardText}>New Profile</Text>
           </LinearGradient>
         </Pressable>
       </View>

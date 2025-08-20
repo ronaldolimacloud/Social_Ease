@@ -155,7 +155,7 @@ export const useProfile = () => {
       const insightPromises = insights.map(insight =>
         client.models.Insight.create({
           text: insight.text,
-          timestamp: insight.timestamp,
+          timestamp: insight.timestamp, // Keep as string (already in ISO format)
           profileID: profile.id
         })
       );
@@ -332,7 +332,7 @@ export const useProfile = () => {
         ...insightsToAdd.map(insight =>
           client.models.Insight.create({
             text: insight.text,
-            timestamp: insight.timestamp,
+            timestamp: insight.timestamp, // Keep as string (ISO format)
             profileID: profile.id
           })
         ),

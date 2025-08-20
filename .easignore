@@ -89,3 +89,4 @@ amplifyconfiguration*
 # Prebuild native folders (for CNG/Prebuild with EAS Build)
 /android
 /ios
+amplify_outputs.json

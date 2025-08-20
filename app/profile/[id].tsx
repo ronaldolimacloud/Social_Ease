@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
+import { useGroup } from '../../lib/hooks/useGroup';
 import { LinearGradient } from 'expo-linear-gradient';
 import { refreshImageUrl, getCloudFrontUrl } from '../../lib/utils';
 import { CLOUDFRONT_URL } from '../../lib/utils/cloudfront';
@@ -63,10 +64,16 @@ export default function ProfileScreen() {
   const [newInsight, setNewInsight] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const { getProfile, updateProfile, deleteProfile } = useProfile();
+  const { listGroups } = useGroup();
   const [refreshedPhotoUrl, setRefreshedPhotoUrl] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [showInsightForm, setShowInsightForm] = useState(false);
+  
+  // Add new state for group management
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; type: string; name: string; }>>([]);
+  const [selectedGroups, setSelectedGroups] = useState<Array<{ id: string; type: string; name: string; }>>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
   /**
    * Fetches profile data from the backend
@@ -233,12 +240,15 @@ export default function ProfileScreen() {
    * Handles adding a new insight/note about the person
    */
   const handleAddInsight = async () => {
-    if (!newInsight.trim() || !profile) return;
+    if (!profile || !newInsight.trim()) return;
+
+    const insight = {
+      id: Date.now().toString(),
+      text: newInsight.trim(),
+      timestamp: new Date().toISOString(),
+    };
 
     try {
-      // Current timestamp
-      const timestamp = new Date().toISOString();
-      
       // Call updateProfile with the new insight
       await updateProfile(
         profile.id,
@@ -250,7 +260,7 @@ export default function ProfileScreen() {
           photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined // Convert null to undefined
         },
         undefined, // No new photo
-        [{ text: newInsight, timestamp }], // Insights to add
+        [{ text: insight.text, timestamp: insight.timestamp }], // Insights to add
         [], // No insights to remove
         [], // No groups to add
         [] // No groups to remove
@@ -258,6 +268,9 @@ export default function ProfileScreen() {
       
       // Update local state
       setNewInsight('');
+      
+      // Refresh the profile to show the new insight
+      fetchProfile();
     } catch (error) {
       console.error('Error adding insight:', error);
     }
@@ -310,7 +323,7 @@ export default function ProfileScreen() {
       setDeleting(true);
       await deleteProfile(id as string);
       // Navigate back after successful deletion
-      router.replace('/(tabs)/profiles');
+      router.replace('/(tabs)/profiles/profiles');
     } catch (error) {
       console.error('Error deleting profile:', error);
       Alert.alert(
@@ -326,6 +339,98 @@ export default function ProfileScreen() {
   const handleDeleteCancel = () => {
     setShowDeleteAlert(false);
   };
+
+  /**
+   * Fetches all available groups for selection
+   */
+  const fetchGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const result = await listGroups();
+      if (result && result.data) {
+        // Format the groups to match our expected structure
+        const formattedGroups = result.data.map(group => ({
+          id: group.id,
+          type: group.type || 'general',
+          name: group.name
+        }));
+        setAvailableGroups(formattedGroups);
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+  
+  /**
+   * Toggles a group selection (add/remove)
+   */
+  const toggleGroup = (group: { id: string; type: string; name: string; }) => {
+    setSelectedGroups(current => {
+      const isSelected = current.some(g => g.id === group.id);
+      if (isSelected) {
+        return current.filter(g => g.id !== group.id);
+      } else {
+        return [...current, group];
+      }
+    });
+  };
+  
+  /**
+   * Handles saving group changes
+   */
+  const handleSaveGroups = async () => {
+    if (!profile) return;
+    
+    try {
+      // Calculate groups to add and remove
+      const currentGroupIds = extendedData?.groupsData?.map(g => g.id) || [];
+      const selectedGroupIds = selectedGroups.map(g => g.id);
+      
+      const groupsToAdd = selectedGroups.filter(g => !currentGroupIds.includes(g.id));
+      const groupsToRemove = (extendedData?.groupsData || [])
+        .filter(g => !selectedGroupIds.includes(g.id))
+        .map(g => g.id);
+      
+      // Call updateProfile with the correct parameters
+      await updateProfile(
+        profile.id,
+        {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          description: profile.description || '',
+          bio: profile.bio || '',
+          photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined
+        },
+        undefined, // No new photo
+        [], // No insights to add
+        [], // No insights to remove
+        groupsToAdd, // Groups to add
+        groupsToRemove // Groups to remove
+      );
+      
+      // Close modal and refresh profile
+      setShowGroupModal(false);
+      fetchProfile();
+    } catch (error) {
+      console.error('Error updating groups:', error);
+    }
+  };
+  
+  // Update useEffect to set selected groups when profile data changes
+  useEffect(() => {
+    if (extendedData && extendedData.groupsData) {
+      setSelectedGroups(extendedData.groupsData);
+    }
+  }, [extendedData]);
+  
+  // Add effect to load groups when modal is opened
+  useEffect(() => {
+    if (showGroupModal) {
+      fetchGroups();
+    }
+  }, [showGroupModal]);
 
   // Show loading indicator while fetching profile data
   if (!profile) {
@@ -350,9 +455,9 @@ export default function ProfileScreen() {
       <CustomAlert
         visible={showDeleteAlert}
         title="Delete Profile"
-        message="Are you sure you want to delete this profile? This action cannot be undone."
-        onCancel={handleDeleteCancel}
+        message="Are you sure you want to permanently delete this profile? This action cannot be undone."
         onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
         confirmText="Delete"
         cancelText="Cancel"
         isDestructive={true}
@@ -476,67 +581,187 @@ export default function ProfileScreen() {
               <Text style={styles.bio}>{profile.bio}</Text>
             </View>
 
-            {/* Profile Insights Section */}
-            <View style={styles.sectionContainer}>
+            {/* Insights/Notes Section */}
+            <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Notes & Insights</Text>
-                <Pressable onPress={() => setShowInsightForm(true)} style={styles.addButton}>
-                  <Ionicons name="add-circle" size={24} color="#4CAF50" />
+              </View>
+              
+              {/* Replace the add button and conditional form with direct input like in working example */}
+              <View style={styles.insightInput}>
+                <TextInput
+                  style={styles.insightTextInput}
+                  value={newInsight}
+                  onChangeText={setNewInsight}
+                  placeholder="Add a quick note..."
+                  multiline
+                  placeholderTextColor="#77B8B6"
+                />
+                <Pressable
+                  onPress={handleAddInsight}
+                  style={[
+                    styles.addInsightButton,
+                    !newInsight.trim() && styles.addInsightButtonDisabled
+                  ]}>
+                  <Ionicons name="add" size={24} color="#FFFFFF" />
                 </Pressable>
               </View>
               
-              {/* Insights List */}
-              {extendedData && extendedData.insightsData.length > 0 ? (
-                extendedData.insightsData.map((insight) => (
-                  <View key={insight.id} style={styles.insightItem}>
-                    <View style={styles.insightContent}>
+              {/* List of existing insights */}
+              {extendedData?.insightsData && extendedData.insightsData.length > 0 ? (
+                <View style={styles.insightsList}>
+                  {extendedData.insightsData.map(insight => (
+                    <View key={insight.id} style={styles.insightItem}>
                       <Text style={styles.insightText}>{insight.text}</Text>
-                      <Text style={styles.insightDate}>
-                        {new Date(insight.timestamp).toLocaleDateString()}
-                      </Text>
+                      <Pressable
+                        onPress={() => handleRemoveInsight(insight.id)}
+                        style={styles.removeInsight}>
+                        <Ionicons name="close-circle" size={20} color="#85c3c0" />
+                      </Pressable>
                     </View>
-                    <Pressable
-                      onPress={() => handleRemoveInsight(insight.id)}
-                      style={styles.deleteInsightButton}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-                    </Pressable>
-                  </View>
-                ))
+                  ))}
+                </View>
               ) : (
-                <Text style={styles.emptyText}>No insights yet. Add some!</Text>
+                <Text style={styles.noInsights}>No notes added yet</Text>
               )}
             </View>
             
             {/* Groups Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Groups</Text>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Groups</Text>
+                <Pressable 
+                  onPress={() => setShowGroupModal(true)} 
+                  style={styles.addButton}>
+                  <Ionicons name="add-circle" size={24} color="#85c3c0" />
+                </Pressable>
+              </View>
               
-              {/* Groups List */}
-              {extendedData && extendedData.groupsData.length > 0 ? (
-                extendedData.groupsData.map((group, index) => (
-                  <View key={group.id} style={styles.groupItem}>
-                    <View style={styles.groupIcon}>
-                      <Ionicons 
-                        name={
-                          group.type === 'work' ? 'business' : 
-                          group.type === 'school' ? 'school' : 
-                          group.type === 'social' ? 'people' : 'grid'
-                        } 
-                        size={20} 
-                        color="#FFFFFF" 
-                      />
+              {/* Display current groups */}
+              {extendedData?.groupsData && extendedData.groupsData.length > 0 ? (
+                <View style={styles.groupsList}>
+                  {extendedData.groupsData.map(group => (
+                    <View key={group.id} style={styles.groupItem}>
+                      <View style={[
+                        styles.groupIcon,
+                        { backgroundColor: 
+                          group.type === 'work' ? '#E3F2FD' : 
+                          group.type === 'school' ? '#E8F5E9' : 
+                          group.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
+                        }
+                      ]}>
+                        <Ionicons 
+                          name={
+                            group.type === 'work' ? 'business' : 
+                            group.type === 'school' ? 'school' : 
+                            group.type === 'social' ? 'people' : 'list'
+                          } 
+                          size={18} 
+                          color={
+                            group.type === 'work' ? '#2196F3' : 
+                            group.type === 'school' ? '#4CAF50' : 
+                            group.type === 'social' ? '#FF9800' : '#9E9E9E'
+                          } 
+                        />
+                      </View>
+                      <Text style={styles.groupName}>{group.name}</Text>
                     </View>
-                    <Text style={styles.groupName}>{group.name}</Text>
-                  </View>
-                ))
+                  ))}
+                </View>
               ) : (
-                <Text style={styles.emptyText}>Not a member of any groups yet.</Text>
+                <Text style={styles.noGroups}>No groups added yet</Text>
               )}
             </View>
           </View>
         </ScrollView>
       </LinearGradient>
+      
+      {/* Group selection modal */}
+      <Modal
+        visible={showGroupModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGroupModal(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Groups</Text>
+              <Pressable
+                onPress={() => setShowGroupModal(false)}
+                style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
+            
+            {loadingGroups ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#85c3c0" />
+                <Text style={styles.loadingText}>Loading groups...</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.groupListContainer}>
+                {availableGroups.length === 0 ? (
+                  <View style={styles.emptyGroupsContainer}>
+                    <Text style={styles.emptyText}>No groups available</Text>
+                  </View>
+                ) : (
+                  availableGroups.map(group => {
+                    const isSelected = selectedGroups.some(g => g.id === group.id);
+                    return (
+                      <Pressable
+                        key={group.id}
+                        style={[styles.modalGroupItem, isSelected && styles.modalGroupItemSelected]}
+                        onPress={() => toggleGroup(group)}>
+                        <View style={[
+                          styles.groupIcon,
+                          { backgroundColor: 
+                            group.type === 'work' ? '#E3F2FD' : 
+                            group.type === 'school' ? '#E8F5E9' : 
+                            group.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
+                          }
+                        ]}>
+                          <Ionicons 
+                            name={
+                              group.type === 'work' ? 'business' : 
+                              group.type === 'school' ? 'school' : 
+                              group.type === 'social' ? 'people' : 'list'
+                            } 
+                            size={18} 
+                            color={
+                              group.type === 'work' ? '#2196F3' : 
+                              group.type === 'school' ? '#4CAF50' : 
+                              group.type === 'social' ? '#FF9800' : '#9E9E9E'
+                            } 
+                          />
+                        </View>
+                        <Text style={styles.groupName}>{group.name}</Text>
+                        {isSelected && (
+                          <View style={styles.selectedIndicator}>
+                            <Ionicons name="checkmark-circle" size={20} color="#85c3c0" />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })
+                )}
+              </ScrollView>
+            )}
+            
+            <View style={styles.modalFooter}>
+              <Pressable
+                style={styles.cancelButton}
+                onPress={() => setShowGroupModal(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.saveButton}
+                onPress={handleSaveGroups}>
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -653,9 +878,9 @@ const styles = StyleSheet.create({
   // Insight input styles
   insightInput: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 12,
     marginTop: 8,
   },
   insightTextInput: {
@@ -673,6 +898,14 @@ const styles = StyleSheet.create({
   },
   addInsightButtonDisabled: {
     backgroundColor: 'rgba(67, 124, 121, 0.5)',
+  },
+  cancelInsightButton: {
+    backgroundColor: 'rgba(255, 0, 0, 0.5)',
+    borderRadius: 8,
+    width: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
   },
   // Insight list styles
   insightsList: {
@@ -700,7 +933,7 @@ const styles = StyleSheet.create({
     color: '#85c3c0',
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -755,5 +988,85 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 16,
+  },
+  groupsList: {
+    marginTop: 8,
+  },
+  noGroups: {
+    fontSize: 14,
+    color: '#85c3c0',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#061a1a',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  groupListContainer: {
+    flex: 1,
+  },
+  emptyGroupsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalGroupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalGroupItemSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  selectedIndicator: {
+    marginLeft: 8,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(255, 0, 0, 0.5)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  saveButton: {
+    backgroundColor: '#437C79',
+    borderRadius: 8,
+    padding: 12,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 });
