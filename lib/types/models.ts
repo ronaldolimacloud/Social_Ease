@@ -2,8 +2,8 @@
  * Core application data models
  * This file centralizes all shared type definitions used across the app
  */
-import { Nullable } from '@aws-amplify/data-schema';
-import { Schema } from '@/amplify/data/resource';
+import type { Nullable } from '@aws-amplify/data-schema';
+
 
 /**
  * Group model - Represents a social group

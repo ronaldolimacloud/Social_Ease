@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, } from 'react-native';
-import { Stack } from 'expo-router';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 
@@ -19,7 +19,7 @@ export default function CreateScreen() {
       
       <View style={styles.contentContainer}>
         <Text style={styles.text}>Articles</Text>
-        <Link href="./test3" style={styles.link}>
+        <Link href="/(tabs)/Articles/test3" style={styles.link}>
           Read your articles here...
         </Link>
       </View>

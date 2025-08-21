@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-2_KIxLixPfH",
+    "user_pool_id": "ap-southeast-2_z5YyYIq59",
     "aws_region": "ap-southeast-2",
-    "user_pool_client_id": "2d3j87kpg0jl8rd543j5mpu7ve",
-    "identity_pool_id": "ap-southeast-2:d95f9cc4-c5ca-41ad-9398-507a9ce9fe02",
+    "user_pool_client_id": "4t7gbnt0i55j29sj2onf2rvcml",
+    "identity_pool_id": "ap-southeast-2:15f2e0a0-ba95-43bd-a6cb-5e0b2c468f88",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email",
@@ -28,7 +28,7 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://hfbylh3gubdqda2jrlsm2tbq2e.appsync-api.ap-southeast-2.amazonaws.com/graphql",
+    "url": "https://ruvvzqhlyjh5ri2gkbkz5dsymm.appsync-api.ap-southeast-2.amazonaws.com/graphql",
     "aws_region": "ap-southeast-2",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
@@ -509,11 +509,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-2",
-    "bucket_name": "amplify-boltexpostarter-r-photouploadsbucketa4196c-py9aukmvzfva",
+    "bucket_name": "amplify-d2q7nc3yq3zbu0-ma-photouploadsbucketa4196c-mj3js0kq2dem",
     "buckets": [
       {
         "name": "photo-uploads",
-        "bucket_name": "amplify-boltexpostarter-r-photouploadsbucketa4196c-py9aukmvzfva",
+        "bucket_name": "amplify-d2q7nc3yq3zbu0-ma-photouploadsbucketa4196c-mj3js0kq2dem",
         "aws_region": "ap-southeast-2",
         "paths": {
           "private/${cognito-identity.amazonaws.com:sub}/*": {

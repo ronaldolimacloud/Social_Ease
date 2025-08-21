@@ -186,9 +186,9 @@ export default function GroupsScreen() {
   };
 
   const handleGroupPress = (groupName: string) => {
-    // Navigate to the profiles tab with the selected group as a parameter
+    // Navigate to the profiles tab (profilesao) with the selected group as a parameter
     router.push({
-      pathname: '/(tabs)/profiles/profiles',
+      pathname: '/(tabs)/profilesao/profiles',
       params: { selectedGroup: groupName }
     });
   };

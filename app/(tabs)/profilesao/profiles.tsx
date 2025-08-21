@@ -5,7 +5,8 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../../../components/Header';
-import { useProfiles, type Profile } from '../../../lib/hooks/useProfiles';
+import { useProfiles } from '../../../lib/hooks/useProfiles';
+import type { Profile } from '../../../lib/types';
 import { useProfile } from '../../../lib/hooks/useProfile';
 import { client } from '../../../lib/amplify';
 // Import our profile modal component
@@ -438,7 +439,7 @@ export default function ProfilesScreen() {
 
         {/* New Modal button */}
         <Pressable 
-          onPress={() => router.push('/(tabs)/profiles/new_profile')}
+          onPress={() => router.push('/(tabs)/profilesao/new_profile')}
           style={styles.actionCardBase}
         >
           <LinearGradient
