@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TextInput, ViewStyle, TextStyle, ImageStyle, Pr
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link, router } from 'expo-router';
 
 type HeaderProps = {
   showSearch: boolean;
@@ -62,14 +63,18 @@ export default function Header({
             />
           </View>
           {isProfilesTab && (
+            <>  
             <Pressable onPress={onSearchPress} style={styles.searchButton}>
               <Ionicons name="search" size={24} color="#FFFF" />
             </Pressable>
+            
+            
+            </>
           )}
         </View>
       )}
     </SafeAreaView>
-  );
+  );  
 }
 
 const styles = StyleSheet.create<Styles>({

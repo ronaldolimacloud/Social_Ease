@@ -420,7 +420,7 @@ export default function ProfilesScreen() {
       <View style={styles.bottomActionContainer}>
         {/* Touchable card for creating a new profile */}
         <Pressable 
-          onPress={handleOpenProfileModal}
+          onPress={() => router.push('/(tabs)/profilesao/groups_mod')}
           style={styles.actionCardBase}
         >
           <LinearGradient
@@ -431,9 +431,10 @@ export default function ProfilesScreen() {
           >
             {/* Icon container */}
             <View style={styles.actionCardIcon}>
-              <Ionicons name="person-add" size={18} color="#FFFFFF" />
+              <Ionicons name="people-circle" size={20} color="#FFFFFF" />
             </View>
-            <Text style={styles.actionCardText}>Create Profile</Text>
+            <Text style={styles.actionCardText}>Groups</Text>
+            
           </LinearGradient>
         </Pressable>
 
@@ -450,7 +451,7 @@ export default function ProfilesScreen() {
           >
             {/* Icon container */}
             <View style={styles.actionCardIcon}>
-              <Ionicons name="apps" size={18} color="#FFFFFF" />
+              <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
             </View>
             <Text style={styles.actionCardText}>New Profile</Text>
           </LinearGradient>
@@ -482,10 +483,10 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     borderRadius: 12, // Rounded corners
-    padding: 10, // Inner spacing
+    padding: 15, // Inner spacing
     flexDirection: 'row', // Arrange icon and text horizontally
     alignItems: 'center', // Center items vertically
-    justifyContent: 'flex-start', // Align items to the start
+    justifyContent: 'center', // Align items to the start
   },
   actionCardIcon: {
     width: 40, // Fixed width for icon container
@@ -493,10 +494,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // Fully transparent background
     alignItems: 'center', // Center icon horizontally
     justifyContent: 'center', // Center icon vertically
-    marginRight: 10, // Space between icon and text
+    marginRight: 0.2, // Space between icon and text
   },
   actionCardText: {
-    fontSize: 12, // Text size
+    fontSize: 15, // Text size
     fontWeight: '500', // Medium font weight
     color: '#FFFFFF', // White text color to contrast with gradient background
   },
@@ -578,17 +579,17 @@ const styles = StyleSheet.create({
   },
   tabs: {
     paddingLeft: 16, // Padding on the left side
-    paddingBottom: 8, // Padding on the bottom
-    gap: 16, // Space between tab items
+    paddingBottom: 3, // Padding on the bottom
+    gap: 15, // Space between tab items
   },
   tabText: {
-    fontSize: 13, // Text size
+    fontSize: 15, // Text size
     fontWeight: '500', // Medium font weight
     color: '#85c3c0', // Dark color for inactive tabs
   },
   tabTextActive: {
     color: '#FFFFFF', // White color for active tab
-    fontWeight: '600', // Slightly bolder than inactive tabs
+    fontWeight: '800', // Slightly bolder than inactive tabs
     paddingBottom: 8, // Add space between text and border
     borderBottomWidth: 0.5, // Bottom border to indicate active state
     borderBottomColor: '#FFFFFF', // White border color
