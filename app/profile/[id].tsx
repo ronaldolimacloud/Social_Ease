@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, Dimensions } from 'react-native';
+
+// Max height for the scrollable groups list inside the modal (50% of screen height)
+const MODAL_GROUP_LIST_MAX_HEIGHT = Math.floor(Dimensions.get('window').height * 0.5);
 import { Image } from 'expo-image';
 import { useLocalSearchParams, Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -75,6 +78,16 @@ export default function ProfileScreen() {
   const [selectedGroups, setSelectedGroups] = useState<Array<{ id: string; type: string; name: string; }>>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
+  // Inline edit mode state
+  const [editMode, setEditMode] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [description, setDescription] = useState('');
+  const [bio, setBio] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  
+
   /**
    * Fetches profile data from the backend
    */
@@ -101,6 +114,11 @@ export default function ProfileScreen() {
         if (result && result.profile) {
           // Set the profile from the nested profile property
           setProfile(result.profile as Profile);
+          // Prefill edit fields
+          setFirstName((result.profile as Profile).firstName || '');
+          setLastName((result.profile as Profile).lastName || '');
+          setDescription((result.profile as Profile).description || '');
+          setBio((result.profile as Profile).bio || '');
           
           // If we have extended data, store it separately
           if (result.extendedData) {
@@ -323,7 +341,7 @@ export default function ProfileScreen() {
       setDeleting(true);
       await deleteProfile(id as string);
       // Navigate back after successful deletion
-      router.replace('/(tabs)/profiles/profiles');
+      router.replace('/(tabs)/profilesao/profiles');
     } catch (error) {
       console.error('Error deleting profile:', error);
       Alert.alert(
@@ -346,7 +364,7 @@ export default function ProfileScreen() {
   const fetchGroups = async () => {
     try {
       setLoadingGroups(true);
-      const result = await listGroups();
+      const result = await listGroups({ limit: 1000 });
       if (result && result.data) {
         // Format the groups to match our expected structure
         const formattedGroups = result.data.map(group => ({
@@ -360,6 +378,51 @@ export default function ProfileScreen() {
       console.error('Error fetching groups:', error);
     } finally {
       setLoadingGroups(false);
+    }
+  };
+
+  /**
+   * Toggle edit mode
+   */
+  const toggleEditMode = () => {
+    if (!editMode && profile) {
+      setFirstName(profile.firstName || '');
+      setLastName(profile.lastName || '');
+      setDescription(profile.description || '');
+      setBio(profile.bio || '');
+    }
+    setEditMode(prev => !prev);
+  };
+
+  /**
+   * Save inline text edits
+   */
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    try {
+      setSavingProfile(true);
+      await updateProfile(
+        profile.id,
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          description: description.trim(),
+          bio: bio.trim(),
+          photoUrl: profile.photoUrl !== null ? profile.photoUrl : undefined
+        },
+        undefined,
+        [],
+        [],
+        [],
+        []
+      );
+      await fetchProfile();
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error saving profile edits:', error);
+      Alert.alert('Update Failed', 'There was a problem updating the profile. Please try again.', [{ text: 'OK' }]);
+    } finally {
+      setSavingProfile(false);
     }
   };
   
@@ -425,7 +488,7 @@ export default function ProfileScreen() {
     }
   }, [extendedData]);
   
-  // Add effect to load groups when modal is opened
+  // Load groups when modal opens (same pattern as new.tsx)
   useEffect(() => {
     if (showGroupModal) {
       fetchGroups();
@@ -492,12 +555,26 @@ export default function ProfileScreen() {
                   <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
                 )}
               </Pressable>
-              <Pressable 
-                onPress={() => router.push(`/profile/edit?id=${profile.id}`)} 
-                style={{ marginRight: 16 }}
-              >
-                <Ionicons name="create-outline" size={24} color="#FFFFFF" />
-              </Pressable>
+              {editMode ? (
+                <Pressable 
+                  onPress={handleSaveProfile}
+                  style={{ marginRight: 16 }}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+                  )}
+                </Pressable>
+              ) : (
+                <Pressable 
+                  onPress={toggleEditMode} 
+                  style={{ marginRight: 16 }}
+                >
+                  <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+                </Pressable>
+              )}
             </View>
           ),
           headerStyle: {
@@ -547,8 +624,38 @@ export default function ProfileScreen() {
               </View>
             </Pressable>
             {/* Profile Name and Description */}
-            <Text style={styles.name}>{`${profile.firstName} ${profile.lastName}`}</Text>
-            <Text style={styles.description}>{profile.description}</Text>
+            {editMode ? (
+              <View style={{ width: '100%', paddingHorizontal: 16 }}>
+                <View style={styles.inlineRow}>
+                  <TextInput
+                    style={[styles.nameInput, { flex: 1, marginRight: 8 }]}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder="First name"
+                    placeholderTextColor="#77B8B6"
+                  />
+                  <TextInput
+                    style={[styles.nameInput, { flex: 1, marginLeft: 8 }]}
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder="Last name"
+                    placeholderTextColor="#77B8B6"
+                  />
+                </View>
+                <TextInput
+                  style={styles.descriptionInput}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Description"
+                  placeholderTextColor="#77B8B6"
+                />
+              </View>
+            ) : (
+              <>
+                <Text style={styles.name}>{`${profile.firstName} ${profile.lastName}`}</Text>
+                <Text style={styles.description}>{profile.description}</Text>
+              </>
+            )}
             {/* Group membership tags */}
             <View style={styles.groupTags}>
               {profile.groups && Array.isArray(profile.groups) ? (
@@ -578,7 +685,18 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>About</Text>
               </View>
-              <Text style={styles.bio}>{profile.bio}</Text>
+              {editMode ? (
+                <TextInput
+                  style={styles.bioEdit}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Write a short bio..."
+                  placeholderTextColor="#77B8B6"
+                  multiline
+                />
+              ) : (
+                <Text style={styles.bio}>{profile.bio}</Text>
+              )}
             </View>
 
             {/* Insights/Notes Section */}
@@ -699,7 +817,7 @@ export default function ProfileScreen() {
                 <Text style={styles.loadingText}>Loading groups...</Text>
               </View>
             ) : (
-              <ScrollView style={styles.groupListContainer}>
+              <ScrollView style={styles.groupListContainer} showsVerticalScrollIndicator>
                 {availableGroups.length === 0 ? (
                   <View style={styles.emptyGroupsContainer}>
                     <Text style={styles.emptyText}>No groups available</Text>
@@ -837,6 +955,26 @@ const styles = StyleSheet.create({
     color: '#85c3c0',
     marginBottom: 5,
   },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  nameInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  descriptionInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    color: '#FFFFFF',
+    marginTop: 8,
+  },
   // Group tag styles
   groupTags: {
     flexDirection: 'row',
@@ -874,6 +1012,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#85c3c0',
+  },
+  bioEdit: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
   },
   // Insight input styles
   insightInput: {
@@ -1026,7 +1173,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   groupListContainer: {
-    flex: 1,
+    maxHeight: MODAL_GROUP_LIST_MAX_HEIGHT,
   },
   emptyGroupsContainer: {
     flex: 1,

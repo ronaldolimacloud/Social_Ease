@@ -39,12 +39,12 @@ export const useGroup = () => {
     }
   };
 
-  const listGroups = async () => {
+  const listGroups = async (options?: { limit?: number }) => {
     try {
       setLoading(true);
       setError(null);
       
-      const groups = await client.models.Group.list();
+      const groups = await client.models.Group.list({ limit: options?.limit ?? 1000 });
       return groups;
     } catch (err) {
       // More detailed error logging

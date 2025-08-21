@@ -21,7 +21,7 @@ export default function CreateScreen() {
         
         <Text style={styles.text}>OOOOO HOW COOL!</Text>
         <Text style={styles.text}>you can either swipe to close or press the button below</Text>
-        <Link href="../(tabs)/profiles" style={styles.link}>
+        <Link href="../(tabs)/profilesao/profiles" style={styles.link}>
           Go back to Profiles
         </Link>
       </View>
