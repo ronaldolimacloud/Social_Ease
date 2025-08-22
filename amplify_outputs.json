@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-2_z5YyYIq59",
+    "user_pool_id": "ap-southeast-2_Px8Fhviyo",
     "aws_region": "ap-southeast-2",
-    "user_pool_client_id": "4t7gbnt0i55j29sj2onf2rvcml",
-    "identity_pool_id": "ap-southeast-2:15f2e0a0-ba95-43bd-a6cb-5e0b2c468f88",
+    "user_pool_client_id": "6n37qr8rifn14kq3tbijkf9odr",
+    "identity_pool_id": "ap-southeast-2:78c4e5a2-9f81-4427-bdb6-a3be9b9bfc05",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email",
@@ -25,10 +25,30 @@
       "require_symbols": true,
       "require_uppercase": true
     },
+    "oauth": {
+      "identity_providers": [
+        "GOOGLE"
+      ],
+      "redirect_sign_in_uri": [
+        "socialeasemobile://callback/"
+      ],
+      "redirect_sign_out_uri": [
+        "socialeasemobile://signout/"
+      ],
+      "response_type": "code",
+      "scopes": [
+        "phone",
+        "email",
+        "openid",
+        "profile",
+        "aws.cognito.signin.user.admin"
+      ],
+      "domain": "f8bbaa31d2d94e01ced1.auth.ap-southeast-2.amazoncognito.com"
+    },
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://ruvvzqhlyjh5ri2gkbkz5dsymm.appsync-api.ap-southeast-2.amazonaws.com/graphql",
+    "url": "https://3gsylmfqf5axjgbs6fq76fhupa.appsync-api.ap-southeast-2.amazonaws.com/graphql",
     "aws_region": "ap-southeast-2",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
@@ -509,11 +529,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-2",
-    "bucket_name": "amplify-d2q7nc3yq3zbu0-ma-photouploadsbucketa4196c-mj3js0kq2dem",
+    "bucket_name": "amplify-boltexpostarter-r-photouploadsbucketa4196c-4zixianq7vmy",
     "buckets": [
       {
         "name": "photo-uploads",
-        "bucket_name": "amplify-d2q7nc3yq3zbu0-ma-photouploadsbucketa4196c-mj3js0kq2dem",
+        "bucket_name": "amplify-boltexpostarter-r-photouploadsbucketa4196c-4zixianq7vmy",
         "aws_region": "ap-southeast-2",
         "paths": {
           "private/${cognito-identity.amazonaws.com:sub}/*": {
@@ -546,5 +566,5 @@
       }
     ]
   },
-  "version": "1.3"
+  "version": "1.4"
 }
