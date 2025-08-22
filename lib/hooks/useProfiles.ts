@@ -1,42 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import { Schema } from '@/amplify/data/resource';
 import { Hub } from 'aws-amplify/utils';
-import { Nullable } from '@aws-amplify/data-schema';
 import { getCurrentUser } from 'aws-amplify/auth';
+import { client } from '../amplify';
+import type { UseProfilesReturn, Profile } from '../types';
 
-// Type definitions
-export type Profile = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  description: Nullable<string>;
-  bio: Nullable<string>;
-  photoUrl: Nullable<string>;
-  photoKey: Nullable<string>;
-  insights?: Array<{
-    id: string;
-    text: string;
-    timestamp: string;
-  }>;
-  groups?: Array<{
-    id: string;
-    type: string;
-    name: string;
-  }>;
-  owner?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
+// Types now come from lib/types
 
-export type UseProfilesReturn = {
-  profiles: Profile[];
-  loading: boolean;
-  error: Error | null;
-  refetch: () => Promise<void>;
-};
-
-const client = generateClient<Schema>();
+// Use the shared Amplify client defined in lib/amplify
 
 export function useProfiles(): UseProfilesReturn {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -70,47 +40,57 @@ export function useProfiles(): UseProfilesReturn {
         
         console.log(`After filtering for current user: ${userProfiles.length} profiles found`);
         
-        // Process profiles to add group associations
-        const profilesWithGroups = await Promise.all(
-          userProfiles.map(async (profile) => {
-            // Fetch group memberships for this profile
-            const groupMembershipsResult = await client.models.ProfileGroup.list({
-              filter: { profileID: { eq: profile.id } }
-            });
+        // If no profiles, short-circuit
+        if (userProfiles.length === 0) {
+          setProfiles([]);
+          return;
+        }
 
-            // Get the group IDs from the memberships
-            const groupIds = groupMembershipsResult.data
-              ?.map(pg => pg.groupID)
-              .filter((id): id is string => id !== null) || [];
-              
-            // If there are groups, fetch them
-            if (groupIds.length > 0) {
-              const groupsPromises = groupIds.map(groupId =>
-                client.models.Group.get({ id: groupId })
-              );
-              const groupsResults = await Promise.all(groupsPromises);
-              
-              // Add the groups to the profile
-              return {
-                ...profile,
-                groups: groupsResults
-                  .map(g => g.data)
-                  .filter(Boolean)
-                  .map(g => ({
-                    id: g!.id,
-                    name: g!.name,
-                    type: g!.type || 'general'
-                  }))
-              } as unknown as Profile;
-            }
-            
-            // If no groups, return the profile as is
-            return {
-              ...profile,
-              groups: []
-            } as unknown as Profile;
-          })
+        // Batch-load group memberships for all profiles
+        const profileIds = userProfiles.map(p => p.id);
+        const membershipsResult = await client.models.ProfileGroup.list({
+          filter: { or: profileIds.map(id => ({ profileID: { eq: id } })) },
+          limit: 1000,
+        });
+
+        const memberships = membershipsResult.data || [];
+        const uniqueGroupIds = Array.from(new Set(
+          memberships
+            .map(m => m.groupID)
+            .filter((id): id is string => id !== null)
+        ));
+
+        // Batch-load groups
+        const groupsResults = await Promise.all(
+          uniqueGroupIds.map(groupId => client.models.Group.get({ id: groupId }))
         );
+        const groupMap = new Map<string, { id: string; name: string; type: string }>();
+        groupsResults.forEach(result => {
+          if (result.data) {
+            groupMap.set(result.data.id, {
+              id: result.data.id,
+              name: result.data.name,
+              type: result.data.type || 'general',
+            });
+          }
+        });
+
+        // Attach groups to each profile using the preloaded maps
+        const profilesWithGroups = userProfiles.map(profile => {
+          const profileGroupIds = memberships
+            .filter(m => m.profileID === profile.id)
+            .map(m => m.groupID)
+            .filter((id): id is string => id !== null);
+
+          const groups = profileGroupIds
+            .map(gid => groupMap.get(gid))
+            .filter(Boolean) as Array<{ id: string; name: string; type: string }>; 
+
+          return {
+            ...profile,
+            groups,
+          } as unknown as Profile;
+        });
         
         console.log(`Setting ${profilesWithGroups.length} profiles in state`);
         setProfiles(profilesWithGroups);
@@ -155,51 +135,57 @@ export function useProfiles(): UseProfilesReturn {
               
               // Filter profiles by current user
               const userProfiles = items.filter(item => 
-                (item as unknown as Profile).owner === userId
+                (item as any).owner === userId
+              ) as any[];
+
+              if (userProfiles.length === 0) {
+                setProfiles([]);
+                return;
+              }
+
+              const profileIds = userProfiles.map(p => p.id);
+              const membershipsResult = await client.models.ProfileGroup.list({
+                filter: { or: profileIds.map(id => ({ profileID: { eq: id } })) },
+                limit: 1000,
+              });
+
+              const memberships = membershipsResult.data || [];
+              const uniqueGroupIds = Array.from(new Set(
+                memberships
+                  .map(m => m.groupID)
+                  .filter((id): id is string => id !== null)
+              ));
+
+              const groupsResults = await Promise.all(
+                uniqueGroupIds.map(groupId => client.models.Group.get({ id: groupId }))
               );
-              
-              // Process profiles to add group associations
-              const profilesWithGroups = await Promise.all(
-                userProfiles.map(async (profile) => {
-                  // Fetch group memberships for this profile
-                  const groupMembershipsResult = await client.models.ProfileGroup.list({
-                    filter: { profileID: { eq: profile.id } }
+              const groupMap = new Map<string, { id: string; name: string; type: string }>();
+              groupsResults.forEach(result => {
+                if (result.data) {
+                  groupMap.set(result.data.id, {
+                    id: result.data.id,
+                    name: result.data.name,
+                    type: result.data.type || 'general',
                   });
-      
-                  // Get the group IDs from the memberships
-                  const groupIds = groupMembershipsResult.data
-                    ?.map(pg => pg.groupID)
-                    .filter((id): id is string => id !== null) || [];
-                    
-                  // If there are groups, fetch them
-                  if (groupIds.length > 0) {
-                    const groupsPromises = groupIds.map(groupId =>
-                      client.models.Group.get({ id: groupId })
-                    );
-                    const groupsResults = await Promise.all(groupsPromises);
-                    
-                    // Add the groups to the profile
-                    return {
-                      ...profile,
-                      groups: groupsResults
-                        .map(g => g.data)
-                        .filter(Boolean)
-                        .map(g => ({
-                          id: g!.id,
-                          name: g!.name,
-                          type: g!.type || 'general'
-                        }))
-                    } as unknown as Profile;
-                  }
-                  
-                  // If no groups, return the profile as is
-                  return {
-                    ...profile,
-                    groups: []
-                  } as unknown as Profile;
-                })
-              );
-              
+                }
+              });
+
+              const profilesWithGroups = userProfiles.map(profile => {
+                const profileGroupIds = memberships
+                  .filter(m => m.profileID === profile.id)
+                  .map(m => m.groupID)
+                  .filter((id): id is string => id !== null);
+
+                const groups = profileGroupIds
+                  .map(gid => groupMap.get(gid))
+                  .filter(Boolean) as Array<{ id: string; name: string; type: string }>;
+
+                return {
+                  ...profile,
+                  groups,
+                } as unknown as Profile;
+              });
+
               setProfiles(profilesWithGroups);
             }
           },

@@ -22,6 +22,9 @@ export default function CreateScreen() {
         <Link href="./modalino" style={styles.link}>
           Open modal
         </Link>
+        <Link href="./logout" style={styles.link}>
+          Logout
+        </Link>
       </View>
     </LinearGradient>
   );

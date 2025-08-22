@@ -58,33 +58,30 @@ export default function EditProfileScreen() {
 
   // Fetch groups from the database
   useEffect(() => {
-    const subscription = client.models.Group.observeQuery().subscribe({
-      next: ({ items, isSynced }) => {
-        if (isSynced) {
-          // Filter out deleted groups
-          const validGroups = items
-            .filter(item => !(item as any)._deleted)
-            .map(item => ({
+    // Load groups when modal is opened (match new.tsx behavior)
+    if (showGroupModal) {
+      (async () => {
+        try {
+          setLoadingGroups(true);
+          const result = await client.models.Group.list({ limit: 1000 });
+          if (result.data) {
+            const validGroups = result.data.map((item: any) => ({
               id: item.id,
               name: item.name,
               type: item.type || 'general',
               description: item.description || undefined,
               _version: (item as any)._version,
             }));
-          
-          setAvailableGroups(validGroups);
+            setAvailableGroups(validGroups);
+          }
+        } catch (error) {
+          console.error('Error fetching groups:', error);
+        } finally {
           setLoadingGroups(false);
         }
-      },
-      error: (error) => {
-        console.error('Error fetching groups:', error);
-        setLoadingGroups(false);
-      }
-    });
-
-    // Clean up subscription
-    return () => subscription.unsubscribe();
-  }, []);
+      })();
+    }
+  }, [showGroupModal]);
 
   useEffect(() => {
     const fetchProfile = async () => {

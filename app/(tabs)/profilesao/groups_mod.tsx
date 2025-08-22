@@ -4,10 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import Header from '../../components/Header';
-import GroupItem from '../../components/GroupItem';
-import { useGroup } from '../../lib/hooks/useGroup';
-import { client } from '../../lib/amplify';
+import Header from '../../../components/Header';
+import GroupItem from '../../../components/GroupItem';
+import { useGroup } from '../../../lib/hooks/useGroup';
+import { client } from '../../../lib/amplify';
 
 // Simplified Group type definition
 type Group = {
@@ -186,9 +186,9 @@ export default function GroupsScreen() {
   };
 
   const handleGroupPress = (groupName: string) => {
-    // Navigate to the profiles tab with the selected group as a parameter
+    // Navigate to the profiles tab (profilesao) with the selected group as a parameter
     router.push({
-      pathname: '/(tabs)/profiles/profiles',
+      pathname: '/(tabs)/profilesao/profiles',
       params: { selectedGroup: groupName }
     });
   };

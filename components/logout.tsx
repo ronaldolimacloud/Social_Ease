@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 /**
  * Settings screen component - Simplified to just show sign out functionality
@@ -10,6 +11,29 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function SettingsScreen() {
   const { user, signOut } = useAuthenticator();
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState<string>('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const attrs = await fetchUserAttributes();
+        const friendly =
+          attrs.given_name ||
+          attrs.name ||
+          // loginId if available (email/phone)
+          (user as any)?.signInDetails?.loginId ||
+          // fallback to email prefix or username
+          (user?.username?.includes('@') ? user.username.split('@')[0] : user?.username) ||
+          '';
+        setDisplayName(friendly);
+      } catch (e) {
+        const fallback = user?.username?.includes('@') ? user.username.split('@')[0] : user?.username;
+        setDisplayName(fallback || '');
+      }
+    })();
+  }, [user]);
+  
+  
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -32,7 +56,7 @@ export default function SettingsScreen() {
     >
       <View style={styles.container}>
         <View style={styles.userInfo}>
-          <Text style={styles.emailText}>{user?.username}</Text>
+          <Text style={styles.emailText}>{displayName}</Text>
         </View>
         
         <Pressable 

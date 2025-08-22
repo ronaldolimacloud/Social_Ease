@@ -32,7 +32,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profiles"
+        name="profilesao"
         options={{
           title: 'Profiles',
           tabBarIcon: ({ size, color }) => (
@@ -49,24 +49,9 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="people-circle" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
-        }}
-      />
+      
+      
+      
       <Tabs.Screen
         name="Videos"
         options={{

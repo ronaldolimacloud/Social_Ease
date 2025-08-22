@@ -6,7 +6,7 @@ import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../
 import { handleError, clearError } from '../utils';
 import { CLOUDFRONT_URL, getCloudFrontUrl, createCloudFrontKey } from '../utils/cloudfront';
 import { generateClient } from 'aws-amplify/data';
-import { Schema } from '@/amplify/data/resource';
+import { Schema } from '../../amplify/data/resource';
 import { Alert } from 'react-native';
 import { Dispatch, SetStateAction } from 'react';
 
