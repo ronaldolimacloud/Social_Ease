@@ -14,7 +14,13 @@ export const auth = defineAuth({
   externalProviders: {
     google: {
       clientId: secret('GOOGLE_CLIENT_ID'),
-      clientSecret: secret('GOOGLE_CLIENT_SECRET')
+      clientSecret: secret('GOOGLE_CLIENT_SECRET'),
+      scopes: ['openid', 'email', 'profile'],
+      attributeMapping: {
+        email: 'email',
+        givenName: 'given_name',
+        familyName: 'family_name',
+      }
     },
     callbackUrls: ["socialeasemobile://callback/"],
     logoutUrls: ["socialeasemobile://signout/"],
