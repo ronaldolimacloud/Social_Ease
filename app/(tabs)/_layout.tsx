@@ -49,15 +49,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="people-circle" size={size} color={color} />
-          ),
-        }}
-      />
+      
       
       
       <Tabs.Screen

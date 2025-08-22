@@ -1,4 +1,4 @@
-import { defineAuth } from '@aws-amplify/backend';
+import { defineAuth, secret } from '@aws-amplify/backend';
 
 /**
  * Define and configure your auth resource
@@ -10,6 +10,15 @@ export const auth = defineAuth({
     // Enable email-based authentication
     // Users will be able to sign up and sign in using their email address
     email: true,
+  
+  externalProviders: {
+    google: {
+      clientId: secret('GOOGLE_CLIENT_ID'),
+      clientSecret: secret('GOOGLE_CLIENT_SECRET')
+    },
+    callbackUrls: ["socialeasemobile://callback/"],
+    logoutUrls: ["socialeasemobile://signout/"],
+  },
   },
   
   // Define required user attributes that will be collected during sign-up
