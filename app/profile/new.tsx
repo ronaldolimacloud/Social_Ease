@@ -171,7 +171,7 @@ export default function NewProfileScreen() {
       })));
 
       if (newProfile) {
-        router.replace('/(tabs)/profiles/profiles');
+        router.replace('/(tabs)/profilesao/profiles');
       }
     } catch (err) {
       Alert.alert(
@@ -493,6 +493,7 @@ const styles = StyleSheet.create({
   inputError: {
     borderWidth: 1,
     borderColor: '#FF3B30',
+    height: 24,
   },
   textArea: {
     height: 100, // Taller text area

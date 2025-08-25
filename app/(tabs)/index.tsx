@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { typography } from '../../lib/utils/typography';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -53,7 +54,7 @@ export default function HomeScreen() {
         </Text>
         
         {/* Main heading text - white color for emphasis */}
-        <Text style={styles.mainText}>WELCOME!</Text>
+        <Text style={styles.mainText}>STOP FORGETTING!</Text>
         
         {/* Secondary headings - dark color for contrast */}
         <Text style={styles.darkText}>Create profiles and groups on the tabs below.</Text>
@@ -97,16 +98,18 @@ const styles = StyleSheet.create({
   
   // Main heading style - white text
   mainText: {
-    fontSize: 45,
+    fontSize: typography.sizes.display,
     fontWeight: '800',
+    fontFamily: typography.fontFamily,
     color: '#FFFFFF',
     lineHeight: 45, // Improved readability
   },
   
   // Secondary heading style - dark text
   darkText: {
-    fontSize: 45,
+    fontSize: typography.sizes.display,
     fontWeight: '800',
+    fontFamily: typography.fontFamily,
     color: '#85c3c0',
     lineHeight: 45,
   },
@@ -114,7 +117,8 @@ const styles = StyleSheet.create({
   // Subtext style - smaller, dark text
   // Limited width and increased line height for readability
   subText: {
-    fontSize: 14,
+    fontSize: typography.sizes.body,
+    fontFamily: typography.fontFamily,
     color: '#FFFF',
     marginTop: 5,
     maxWidth: '90%',

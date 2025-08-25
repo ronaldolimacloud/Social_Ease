@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { typography } from '../lib/utils/typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GroupPicker from './GroupPicker';
 import type { GroupInput, InsightInput, ProfileInput } from '../lib/types';
@@ -55,7 +56,10 @@ export default function ProfileForm({ initial, submitting = false, onSubmit, onC
 
   const [showGroupModal, setShowGroupModal] = useState(false);
 
-  const isFormValid = useMemo(() => firstName.trim().length > 0, [firstName]);
+  const isFormValid = useMemo(
+    () => firstName.trim().length > 0 && lastName.trim().length > 0,
+    [firstName, lastName]
+  );
 
   // Defer permission request until user taps Select Photo
 
@@ -171,9 +175,9 @@ export default function ProfileForm({ initial, submitting = false, onSubmit, onC
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Last Name <Text style={styles.optional}>(Optional)</Text></Text>
+              <Text style={styles.label}>Last Name<Text style={styles.required}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, !isFormValid && styles.inputError]}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Enter last name"
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 3,
+    borderWidth: 1,
     borderColor: 'rgba(31, 155, 152, 0.5)',
   },
   editPhotoButton: {
@@ -327,8 +331,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#1f9b98',
-    width: 36,
-    height: 36,
+    width: 24,
+    height: 24,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
@@ -341,20 +345,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
     marginBottom: 4,
+    fontFamily: typography.fontFamily,
   },
   required: { color: '#ff6b6b' },
-  optional: { fontSize: 14, color: '#6a8a8a', fontWeight: '400' },
+  optional: { fontSize: 14, color: '#6a8a8a', fontWeight: '400', fontFamily: typography.fontFamily },
   input: {
     height: 50,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     paddingHorizontal: 14,
     fontSize: 16,
+    fontFamily: typography.fontFamily,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
     color: '#FFFFFF',
   },
-  inputError: { borderWidth: 1, borderColor: '#ff6b6b' },
+  inputError: { borderWidth: 0.2, borderColor: '#c8c8c8', height: 44 },
   textArea: { height: 100, paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' },
   insightInput: { flexDirection: 'row', gap: 8 },
   insightTextInput: {
@@ -364,6 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     fontSize: 16,
+    fontFamily: typography.fontFamily,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
     color: '#FFFFFF',
@@ -388,7 +395,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(31, 155, 152, 0.3)',
   },
-  insightText: { flex: 1, fontSize: 15, marginRight: 8, color: '#FFFFFF' },
+  insightText: { flex: 1, fontSize: 15, marginRight: 8, color: '#FFFFFF', fontFamily: typography.fontFamily },
   removeInsight: { padding: 4 },
   groupSelector: {
     flexDirection: 'row',
@@ -401,7 +408,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
     height: 50,
   },
-  groupSelectorText: { fontSize: 16, color: '#FFFFFF' },
+  groupSelectorText: { fontSize: 16, color: '#FFFFFF', fontFamily: typography.fontFamily },
   selectedGroups: { marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   selectedGroup: {
     flexDirection: 'row',
@@ -413,25 +420,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(31, 155, 152, 0.3)',
   },
-  selectedGroupText: { fontSize: 14, color: '#FFFFFF', marginRight: 4 },
+  selectedGroupText: { fontSize: 12, color: '#FFFFFF', marginRight: 4 },
   removeGroup: { marginLeft: 4, padding: 2 },
   buttonContainer: { padding: 16, gap: 10 },
   saveButton: { backgroundColor: '#1f9b98', borderRadius: 12, padding: 16, alignItems: 'center', height: 56 },
   saveButtonDisabled: { backgroundColor: 'rgba(31, 155, 152, 0.5)' },
-  saveButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
+  saveButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '600', fontFamily: typography.fontFamily },
   cancelButton: { backgroundColor: 'transparent', borderRadius: 12, padding: 12, alignItems: 'center' },
-  cancelButtonText: { color: '#FFFFFF', fontSize: 14 },
+  cancelButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: typography.fontFamily },
   modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E5E5' },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#333333' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#333333', fontFamily: typography.fontFamily },
   modalClose: { padding: 8 },
   groupsList: { padding: 16 },
   groupItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 10, marginBottom: 8, backgroundColor: '#F8F8F8' },
   groupItemSelected: { backgroundColor: 'rgba(31, 155, 152, 0.1)' },
   groupIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(31, 155, 152, 0.1)' },
   groupInfo: { flex: 1, marginLeft: 12 },
-  groupName: { fontSize: 16, fontWeight: '500', marginBottom: 2, color: '#333333' },
+  groupName: { fontSize: 16, fontWeight: '500', marginBottom: 2, color: '#333333', fontFamily: typography.fontFamily },
   loadingContainer: { padding: 40, alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: '#666666' },
   emptyGroupsContainer: { padding: 40, alignItems: 'center' },

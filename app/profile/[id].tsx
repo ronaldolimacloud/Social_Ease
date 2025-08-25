@@ -10,8 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '../../lib/hooks/useProfile';
 import { useGroup } from '../../lib/hooks/useGroup';
 import { LinearGradient } from 'expo-linear-gradient';
-import { refreshImageUrl, getCloudFrontUrl } from '../../lib/utils';
-import { CLOUDFRONT_URL } from '../../lib/utils/cloudfront';
+// Local-only images: no CloudFront/S3 utilities
 import CustomAlert from '../../components/CustomAlert';
 
 // Import the logo directly
@@ -133,10 +132,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // Fetch profile data when component mounts or ID changes
-  useEffect(() => {
-    fetchProfile();
-  }, [id]);
+  // Fetching is handled by focus effect with freshness guard
 
   // Refresh profile data when screen comes into focus, but only if it's been more than 30 seconds
   // since the last fetch or if no profile data exists
@@ -160,30 +156,13 @@ export default function ProfileScreen() {
 
   // Optimize image URL resolution with a simplified approach
   useEffect(() => {
-    console.log("Image URL effect triggered with:", {
-      photoUrl: profile?.photoUrl,
-      photoKey: profile?.photoKey
-    });
-    
-    // Direct CloudFront URL resolution for photoKey when available
-    if (profile?.photoKey) {
-      // We already know the key format from the logs, so directly construct the CloudFront URL
-      if (profile.photoKey.startsWith('private/')) {
-        const cloudFrontUrl = getCloudFrontUrl(profile.photoKey);
-        console.log("Direct CloudFront URL created:", cloudFrontUrl);
-        setRefreshedPhotoUrl(cloudFrontUrl);
-        return;
-      }
-    }
-    
-    // Fallback to photoUrl if available or clean up refreshedPhotoUrl if no URLs available
-    if (profile?.photoUrl) {
-      console.log("Using photoUrl directly:", profile.photoUrl);
+    // Local-only: use the stored local URI or clear
+    if (profile?.photoUrl && profile.photoUrl.trim() !== '') {
       setRefreshedPhotoUrl(profile.photoUrl);
     } else {
       setRefreshedPhotoUrl(null);
     }
-  }, [profile?.photoUrl, profile?.photoKey]);
+  }, [profile?.photoUrl]);
 
   /**
    * Handles profile photo selection and update
@@ -533,7 +512,7 @@ export default function ProfileScreen() {
           title: '', // Empty title
           headerLeft: () => (
             <Pressable 
-              onPress={() => router.back()}
+              onPress={() => router.replace('/(tabs)/profilesao/profiles')}
               style={{ 
                 marginLeft: 16,
                 padding: 8,
@@ -744,142 +723,12 @@ export default function ProfileScreen() {
               )}
             </View>
             
-            {/* Groups Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Groups</Text>
-                <Pressable 
-                  onPress={() => setShowGroupModal(true)} 
-                  style={styles.addButton}>
-                  <Ionicons name="add-circle" size={24} color="#85c3c0" />
-                </Pressable>
-              </View>
-              
-              {/* Display current groups */}
-              {extendedData?.groupsData && extendedData.groupsData.length > 0 ? (
-                <View style={styles.groupsList}>
-                  {extendedData.groupsData.map(group => (
-                    <View key={group.id} style={styles.groupItem}>
-                      <View style={[
-                        styles.groupIcon,
-                        { backgroundColor: 
-                          group.type === 'work' ? '#E3F2FD' : 
-                          group.type === 'school' ? '#E8F5E9' : 
-                          group.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
-                        }
-                      ]}>
-                        <Ionicons 
-                          name={
-                            group.type === 'work' ? 'business' : 
-                            group.type === 'school' ? 'school' : 
-                            group.type === 'social' ? 'people' : 'list'
-                          } 
-                          size={18} 
-                          color={
-                            group.type === 'work' ? '#2196F3' : 
-                            group.type === 'school' ? '#4CAF50' : 
-                            group.type === 'social' ? '#FF9800' : '#9E9E9E'
-                          } 
-                        />
-                      </View>
-                      <Text style={styles.groupName}>{group.name}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.noGroups}>No groups added yet</Text>
-              )}
-            </View>
+            {/* Groups section removed (group tags already shown under name) */}
           </View>
         </ScrollView>
       </LinearGradient>
       
-      {/* Group selection modal */}
-      <Modal
-        visible={showGroupModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowGroupModal(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Groups</Text>
-              <Pressable
-                onPress={() => setShowGroupModal(false)}
-                style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
-              </Pressable>
-            </View>
-            
-            {loadingGroups ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#85c3c0" />
-                <Text style={styles.loadingText}>Loading groups...</Text>
-              </View>
-            ) : (
-              <ScrollView style={styles.groupListContainer} showsVerticalScrollIndicator>
-                {availableGroups.length === 0 ? (
-                  <View style={styles.emptyGroupsContainer}>
-                    <Text style={styles.emptyText}>No groups available</Text>
-                  </View>
-                ) : (
-                  availableGroups.map(group => {
-                    const isSelected = selectedGroups.some(g => g.id === group.id);
-                    return (
-                      <Pressable
-                        key={group.id}
-                        style={[styles.modalGroupItem, isSelected && styles.modalGroupItemSelected]}
-                        onPress={() => toggleGroup(group)}>
-                        <View style={[
-                          styles.groupIcon,
-                          { backgroundColor: 
-                            group.type === 'work' ? '#E3F2FD' : 
-                            group.type === 'school' ? '#E8F5E9' : 
-                            group.type === 'social' ? '#FFF3E0' : '#F5F5F5' 
-                          }
-                        ]}>
-                          <Ionicons 
-                            name={
-                              group.type === 'work' ? 'business' : 
-                              group.type === 'school' ? 'school' : 
-                              group.type === 'social' ? 'people' : 'list'
-                            } 
-                            size={18} 
-                            color={
-                              group.type === 'work' ? '#2196F3' : 
-                              group.type === 'school' ? '#4CAF50' : 
-                              group.type === 'social' ? '#FF9800' : '#9E9E9E'
-                            } 
-                          />
-                        </View>
-                        <Text style={styles.groupName}>{group.name}</Text>
-                        {isSelected && (
-                          <View style={styles.selectedIndicator}>
-                            <Ionicons name="checkmark-circle" size={20} color="#85c3c0" />
-                          </View>
-                        )}
-                      </Pressable>
-                    );
-                  })
-                )}
-              </ScrollView>
-            )}
-            
-            <View style={styles.modalFooter}>
-              <Pressable
-                style={styles.cancelButton}
-                onPress={() => setShowGroupModal(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={styles.saveButton}
-                onPress={handleSaveGroups}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Group selection modal removed */}
     </>
   );
 }

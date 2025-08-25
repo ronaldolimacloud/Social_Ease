@@ -64,7 +64,6 @@ export interface Profile {
   description: Nullable<string>;
   bio: Nullable<string>;
   photoUrl: Nullable<string>;
-  photoKey?: Nullable<string>;
   insights?: Insight[];
   groups?: Array<{
     id: string;
@@ -85,7 +84,6 @@ export interface ProfileInput {
   description?: string;
   bio?: string;
   photoUrl?: string;
-  photoKey?: string;
 }
 
 /**

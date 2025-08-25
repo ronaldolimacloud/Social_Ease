@@ -1,8 +1,6 @@
 import { View, StyleSheet, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { Authenticator, useAuthenticator, ThemeProvider } from '@aws-amplify/ui-react-native';
-import { useEffect } from 'react';
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Define a custom theme that matches your app's colors
@@ -47,14 +45,7 @@ const theme = {
 };
 
 export default function AuthScreen() {
-  const { authStatus } = useAuthenticator(context => [context.authStatus]);
-  
-  // Redirect to the main app if already authenticated
-  useEffect(() => {
-    if (authStatus === 'authenticated') {
-      router.replace('/(tabs)');
-    }
-  }, [authStatus]);
+  useAuthenticator(context => [context.authStatus]);
 
   // Custom header components for each authentication screen
   const CustomSignInHeader = () => (
@@ -99,24 +90,23 @@ export default function AuthScreen() {
         locations={[0.5, 1]}
       >
         <ThemeProvider theme={theme}>
-          <Authenticator.Provider>
-            <Authenticator
-              components={{
-                SignIn: (props) => (
-                  <Authenticator.SignIn 
-                    {...props}
-                    Header={CustomSignInHeader}
-                  />
-                ),
-                SignUp: (props) => (
-                  <Authenticator.SignUp 
-                    {...props}
-                    Header={CustomSignUpHeader}
-                  />
-                ),
-              }}
-            />
-          </Authenticator.Provider>
+          <Authenticator
+            socialProviders={['google']}
+            components={{
+              SignIn: (props) => (
+                <Authenticator.SignIn 
+                  {...props}
+                  Header={CustomSignInHeader}
+                />
+              ),
+              SignUp: (props) => (
+                <Authenticator.SignUp 
+                  {...props}
+                  Header={CustomSignUpHeader}
+                />
+              ),
+            }}
+          />
         </ThemeProvider>
       </LinearGradient>
     </View>
