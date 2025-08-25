@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { client } from '../amplify';
-import { uploadData, getUrl, remove as removeStorage } from 'aws-amplify/storage';
-import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
+import * as FileSystem from 'expo-file-system';
 import { ProfileInput, InsightInput, GroupInput, ProfileQueryOptions } from '../types';
 import { handleError, clearError } from '../utils';
-import { CLOUDFRONT_URL, getCloudFrontUrl, createCloudFrontKey } from '../utils/cloudfront';
-import { generateClient } from 'aws-amplify/data';
-import { Schema } from '../../amplify/data/resource';
-import { Alert } from 'react-native';
-import { Dispatch, SetStateAction } from 'react';
+import { getProfilePhotoUri, setProfilePhotoUri, removeProfilePhoto } from '../services/localImages';
 
 // Import the default profile image
 const DEFAULT_PROFILE_IMAGE = require('../../assets/images/logo.png');
@@ -19,101 +14,42 @@ export const useProfile = () => {
 
   const handlePhotoUpload = async (photoFile: string) => {
     try {
-      console.log('Starting photo upload with file:', typeof photoFile === 'string' ? 'string URI' : 'unknown type');
-      
-      // Get the current user's identity ID for entity-based access control
-      let entityId = '';
+      console.log('Starting local photo save with file:', typeof photoFile === 'string' ? photoFile : 'unknown type');
+
+      // Only support file:// URIs for now (ImagePicker returns file://)
+      if (!photoFile.startsWith('file://')) {
+        throw new Error('Unsupported image format. Only file:// URIs are supported for local storage.');
+      }
+
+      // Ensure destination directory exists
+      const photosDir = `${FileSystem.documentDirectory}profile-photos/`;
       try {
-        const { identityId } = await fetchAuthSession();
-        if (!identityId) {
-          throw new Error('No identity ID returned from authentication session');
+        const dirInfo = await FileSystem.getInfoAsync(photosDir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(photosDir, { intermediates: true });
         }
-        entityId = identityId;
-        console.log('Got identityId for storage path:', entityId);
-      } catch (authErr) {
-        console.error('Error getting identity ID:', authErr);
-        throw new Error('Failed to get identity ID for storage. Are you logged in?');
+      } catch (dirErr) {
+        console.error('Failed ensuring profile-photos directory:', dirErr);
+        // Continue; copy will throw if directory truly not available
       }
-      
-      if (!entityId) {
-        console.error('No identity ID found. User may not be authenticated properly.');
-        throw new Error('No identity ID found. Please log out and log back in.');
-      }
-      
-      // Generate a unique filename without any path information
-      const filename = `profile-photo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      
-      console.log(`Uploading to private storage with key: ${filename}`);
-      
-      try {
-        // Convert file URI to blob data
-        let fileData: Blob;
-        
-        // If the photoFile is a local URI (starts with file://) we need to fetch it first
-        if (photoFile.startsWith('file://') || photoFile.startsWith('content://')) {
-          console.log('Converting local file URI to binary data');
-          try {
-            const response = await fetch(photoFile);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-            }
-            const blob = await response.blob();
-            fileData = blob;
-            console.log('Successfully converted file to blob, size:', blob.size);
-          } catch (fetchError) {
-            console.error('Error fetching local file:', fetchError);
-            throw new Error('Failed to read the selected image. Please try again with a different image.');
-          }
-        } else {
-          // Handle base64 data URIs if needed
-          throw new Error('Unsupported image format. Only file:// URIs are supported.');
-        }
-        
-        // Upload the file data to S3 using private access level
-        const uploadResult = await uploadData({
-          key: filename,  // Just the filename, no path
-          data: fileData,
-          options: {
-            contentType: 'image/jpeg',
-            accessLevel: 'private',  // This tells Amplify to use private/{identityId}/ prefix
-            metadata: {
-              'x-amz-server-side-encryption': 'AES256'
-            },
-            contentDisposition: 'attachment; filename="profile-photo.jpg"'
-          }
-        }).result;
-        
-        console.log('Upload successful, getting URL');
-        // Get the URL with private access level to match
-        const { url } = await getUrl({ 
-          key: filename,  // Just the filename
-          options: { 
-            accessLevel: 'private',
-            expiresIn: 3600 // 1 hour expiration for signed URLs
-          }
-        });
-        console.log('Photo uploaded successfully with URL:', url.toString());
-        
-        // Create the full S3 key path that includes the private/{identityId}/ prefix for CloudFront compatibility
-        const fullS3Key = createCloudFrontKey(filename, entityId);
-        
-        // Generate CloudFront URL for display
-        const cloudFrontUrl = getCloudFrontUrl(fullS3Key);
-        
-        // Return both the CloudFront URL for display and the full S3 key for storage
-        return { url: cloudFrontUrl, key: fullS3Key };
-      } catch (uploadErr) {
-        console.error('Error during S3 upload:', uploadErr);
-        if (uploadErr instanceof Error && uploadErr.message.includes('credentials')) {
-          throw new Error('Authentication issue. Please log out and log back in.');
-        }
-        throw uploadErr;
-      }
+
+      // Derive a filename and extension
+      const sourceUri = photoFile;
+      const extMatch = sourceUri.split('?')[0].split('#')[0].split('.');
+      const ext = extMatch.length > 1 ? extMatch[extMatch.length - 1].toLowerCase() : 'jpg';
+      const filename = `profile-photo-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const destUri = `${photosDir}${filename}`;
+
+      // Copy the file into the app sandbox
+      await FileSystem.copyAsync({ from: sourceUri, to: destUri });
+      console.log('Photo saved locally at:', destUri);
+
+      // Return local URI; no remote key
+      return { url: destUri, key: null as unknown as string | null };
     } catch (err) {
-      // Detailed error logging for photo upload errors
-      console.error('--- PHOTO UPLOAD ERROR ---');
+      console.error('--- LOCAL PHOTO SAVE ERROR ---');
       if (err instanceof Error) {
-        console.error(`Error uploading photo - Type: ${err.name}, Message: ${err.message}`);
+        console.error(`Error saving photo locally - Type: ${err.name}, Message: ${err.message}`);
         if (err.stack) console.error(`Stack trace: ${err.stack}`);
       } else {
         console.error('Unknown error type:', err);
@@ -133,23 +69,25 @@ export const useProfile = () => {
       setError(null);
 
       let photoUrl = input.photoUrl;
-      let photoKey;
 
       if (photoFile) {
         const uploadResult = await handlePhotoUpload(photoFile);
         photoUrl = uploadResult.url;
-        photoKey = uploadResult.key;
       }
 
       // Create the profile first
       const profileResult = await client.models.Profile.create({
         ...input,
-        photoUrl,
-        ...(photoKey && { photoKey }),
+        // Persist only model fields without remote photo keys
       });
 
       const profile = profileResult.data;
       if (!profile) throw new Error('Failed to create profile');
+
+      // Save local mapping after profile creation
+      if (photoUrl) {
+        try { await setProfilePhotoUri(profile.id, photoUrl); } catch {}
+      }
 
       // Create insights for this profile
       const insightPromises = insights.map(insight =>
@@ -199,13 +137,13 @@ export const useProfile = () => {
         return profile;
       }
       
-      // If the profile has a photo key, ensure it has a CloudFront URL
-      if (profile.photoKey) {
-        profile = {
-          ...profile,
-          photoUrl: getCloudFrontUrl(profile.photoKey)
-        };
-      }
+      // Resolve local mapping for photo URI (local-only storage)
+      try {
+        const localUri = await getProfilePhotoUri(id);
+        if (localUri) {
+          profile = { ...profile, photoUrl: localUri } as any;
+        }
+      } catch {}
       
       // For Amplify Gen 2, relationships are functions, not direct arrays
       // We need to return the original profile object with proper relationships
@@ -277,30 +215,30 @@ export const useProfile = () => {
       // First, get the existing profile
       const existingProfile = await client.models.Profile.get({ id });
       let photoUrl = input.photoUrl;
-      let photoKey = existingProfile.data?.photoKey;
 
       if (photoFile) {
         console.log('Update profile: New photo provided, starting upload process');
         try {
-          // Upload new photo with entity-based path
+          // Save new photo locally
           const uploadResult = await handlePhotoUpload(photoFile);
           photoUrl = uploadResult.url;
-          photoKey = uploadResult.key;
-          console.log('Photo uploaded successfully, new URL:', photoUrl);
+          // no remote key
+          console.log('Photo saved locally, new URL:', photoUrl);
 
-          // Delete old photo if exists
-          if (existingProfile.data?.photoKey) {
-            console.log('Attempting to delete old photo:', existingProfile.data.photoKey);
+          // Delete old local photo if it exists and is a file URI
+          const oldPhotoUrl = existingProfile.data?.photoUrl;
+          if (oldPhotoUrl && oldPhotoUrl.startsWith('file://')) {
             try {
-              await removeStorage({ 
-                key: existingProfile.data.photoKey,
-                options: { accessLevel: 'private' }
-              });
-              console.log('Old photo deleted successfully');
+              await FileSystem.deleteAsync(oldPhotoUrl, { idempotent: true });
+              console.log('Old local photo deleted successfully');
             } catch (error) {
-              console.warn('Failed to delete old photo:', error);
-              // Continue with the update even if old photo deletion fails
+              console.warn('Failed to delete old local photo:', error);
             }
+          }
+          // Update local mapping for this profile id
+          try { await removeProfilePhoto(id); } catch {}
+          if (photoUrl) {
+            try { await setProfilePhotoUri(id, photoUrl); } catch {}
           }
         } catch (photoError) {
           console.error('Error during photo update process:', photoError);
@@ -308,19 +246,17 @@ export const useProfile = () => {
         }
       }
 
-      // Update the profile with explicitly setting both photoUrl and photoKey
+      // Update the profile without persisting local photoUrl/photoKey
       console.log('Updating profile with data:', {
         id,
         ...input,
-        photoUrl,
-        photoKey
+        // photoUrl/photoKey intentionally omitted from backend persistence for local-only
       });
       
       const profileResult = await client.models.Profile.update({
         id,
         ...input,
-        photoUrl,
-        photoKey,
+        // No remote photoKey persistence in local-only mode
       });
 
       const profile = profileResult.data;
@@ -395,19 +331,9 @@ export const useProfile = () => {
       const profile = profileResult.data;
       
       if (profile) {
-        // Delete photo if exists
-        if (profile.photoKey) {
-          try {
-            // Use just the filename with accessLevel: 'private'
-            await removeStorage({ 
-              key: profile.photoKey,
-              options: { accessLevel: 'private' }
-            });
-          } catch (error) {
-            console.warn('Failed to delete profile photo:', error);
-          }
-        }
-
+        // Delete local mapping and file
+        try { await removeProfilePhoto(profile.id); } catch {}
+ 
         // Delete related insights
         const insightsResult = await client.models.Insight.list({
           filter: { profileID: { eq: profile.id } }

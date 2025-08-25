@@ -2,16 +2,13 @@ import { Slot, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
-import { Amplify } from 'aws-amplify';
-import outputs from '../amplify_outputs.json';
 import { useEffect } from 'react';
 
 
 
 
 
-// Configure Amplify with the generated AWS resources
-Amplify.configure(outputs);
+// Amplify is configured centrally in lib/amplify.ts
 
 
 

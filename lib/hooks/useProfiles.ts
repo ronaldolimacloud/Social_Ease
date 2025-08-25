@@ -25,17 +25,17 @@ export function useProfiles(): UseProfilesReturn {
       const { userId } = await getCurrentUser();
       console.log(`Fetching profiles for user ID: ${userId}`);
       
-      // Use a more direct approach with no filtering initially
+      // Rely on owner-based authorization; keep a smaller page size to avoid over-fetching
       const response = await client.models.Profile.list({
-        limit: 1000, // Use a high limit to ensure we get all profiles
+        limit: 50,
       });
 
       console.log(`Profile list response received: ${response.data?.length || 0} profiles found`);
 
       if (response.data) {
-        // Filter client-side for the current user's profiles
+        // Items are already filtered by owner; remove deleted locally
         const userProfiles = response.data.filter(profile => 
-          profile.owner === userId && !(profile as any)._deleted
+          !(profile as any)._deleted
         );
         
         console.log(`After filtering for current user: ${userProfiles.length} profiles found`);
@@ -92,8 +92,21 @@ export function useProfiles(): UseProfilesReturn {
           } as unknown as Profile;
         });
         
-        console.log(`Setting ${profilesWithGroups.length} profiles in state`);
-        setProfiles(profilesWithGroups);
+        // Resolve local image URIs for display (local-only image storage)
+        const withLocalImages = await Promise.all(
+          profilesWithGroups.map(async (p) => {
+            try {
+              const localUri = (await import('../services/localImages')).getProfilePhotoUri;
+              const uri = await localUri(p.id);
+              return uri ? ({ ...p, photoUrl: uri } as Profile) : p;
+            } catch {
+              return p;
+            }
+          })
+        );
+        
+        console.log(`Setting ${withLocalImages.length} profiles in state`);
+        setProfiles(withLocalImages);
       } else {
         console.log('No profile data received from query');
         setProfiles([]);
@@ -130,13 +143,8 @@ export function useProfiles(): UseProfilesReturn {
         sub = client.models.Profile.observeQuery().subscribe({
           next: async ({ items, isSynced }) => {
             if (isSynced) {
-              // Get current user to filter the items
-              const { userId } = await getCurrentUser();
-              
-              // Filter profiles by current user
-              const userProfiles = items.filter(item => 
-                (item as any).owner === userId
-              ) as any[];
+              // Items already restricted by auth rules
+              const userProfiles = items as any[];
 
               if (userProfiles.length === 0) {
                 setProfiles([]);
@@ -186,7 +194,23 @@ export function useProfiles(): UseProfilesReturn {
                 } as unknown as Profile;
               });
 
-              setProfiles(profilesWithGroups);
+              // Resolve local image URIs for display
+              try {
+                const { getProfilePhotoUri } = await import('../services/localImages');
+                const withLocalImages = await Promise.all(
+                  profilesWithGroups.map(async (p) => {
+                    try {
+                      const uri = await getProfilePhotoUri(p.id);
+                      return uri ? ({ ...p, photoUrl: uri } as Profile) : p;
+                    } catch {
+                      return p;
+                    }
+                  })
+                );
+                setProfiles(withLocalImages);
+              } catch {
+                setProfiles(profilesWithGroups);
+              }
             }
           },
           error: (err) => {

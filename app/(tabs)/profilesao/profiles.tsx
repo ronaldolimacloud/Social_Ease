@@ -12,7 +12,6 @@ import { client } from '../../../lib/amplify';
 // Import our profile modal component
 import ProfileModal from '../../../components/ProfileModal';
 import CustomAlert from '../../../components/CustomAlert';
-import { getCloudFrontUrl } from '../../../lib/utils/cloudfront';
 
 // Import the logo directly
 const DEFAULT_PROFILE_IMAGE = require('../../../assets/images/logo.png');
@@ -136,17 +135,10 @@ export default function ProfilesScreen() {
 
   // Component to render individual profile cards
   const renderProfile = ({ item }: { item: Profile }) => {
-    // Determine the best image source
-    let imageSource = DEFAULT_PROFILE_IMAGE;
-    
-    // First try to use photoKey with proper encoding if available
-    if (item.photoKey) {
-      imageSource = { uri: getCloudFrontUrl(item.photoKey) };
-    } 
-    // Fall back to photoUrl if no photoKey is available
-    else if (item.photoUrl && item.photoUrl.trim() !== '') {
-      imageSource = { uri: item.photoUrl };
-    }
+    // Local-only images: prefer local photoUrl, else default image
+    const imageSource = item.photoUrl && item.photoUrl.trim() !== ''
+      ? { uri: item.photoUrl }
+      : DEFAULT_PROFILE_IMAGE;
     
     return (
       <View style={styles.profileGridItem}>

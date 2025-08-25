@@ -13,7 +13,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ronaldograxa.socialease.dev",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "socialeasemobile",
+            "CFBundleURLSchemes": ["socialeasemobile"]
+          }
+        ]
       }
     },
     "web": {
@@ -30,7 +36,8 @@
           "supportsPictureInPicture": true
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -44,7 +51,19 @@
       }
     },
     "android": {
-      "package": "com.ronaldograxa.socialease"
+      "package": "com.ronaldograxa.socialease",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "socialeasemobile"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "owner": "ronaldograxa"
   }
